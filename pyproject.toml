@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "fastapi-aws-template"
+version = "0.1.0"
+description = "Basic template testing pytorch fastapi application on aws infra using GHA"
+authors = ["Soutrik Chowdhury"]
+license = "Apache-2.0"
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "3.10.15"
+fastapi = "^0.115.4"
+loguru = "^0.7.2"
+fastapi-utils = "^0.7.0"
+httpx = "^0.27.2"
+typing-inspect = "^0.9.0"
+requests = "^2.32.3"
+pydantic = "^2.9.2"
+pydantic-settings = "^2.6.1"
+uvicorn = "^0.32.0"
+fastapi-restful = {extras = ["all"], version = "^0.6.0"}
+aioredis = "^2.0.1"
+tenacity = "^9.0.0"
+psycopg2-binary = "^2.9.10"
+asyncpg = "^0.30.0"
+confluent-kafka = "^2.6.0"
+aiokafka = "^0.12.0"
+azure-servicebus = "^7.12.3"
+aiohttp = "^3.10.10"
+gunicorn = "^23.0.0"
+aiofiles = "^24.1.0"
+aiologger = "^0.7.0"
+pyyaml = "^6.0.2"
+sqlalchemy-utils = "^0.41.2"
+sqlalchemy = "^2.0.36"
+alembic = "^1.13.3"
+fastapi-limiter = "^0.1.6"
+redis = "5.0.8"
+redisearch = "2.0.0"
+pandas = "^2.2.3"
+python-multipart = "^0.0.17"
+python-dotenv = "^1.0.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
