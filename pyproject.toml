@@ -5,7 +5,6 @@ description = "Basic template testing pytorch fastapi application on aws infra u
 authors = ["Soutrik Chowdhury"]
 license = "Apache-2.0"
 readme = "README.md"
-package-mode = false
 
 [tool.poetry.dependencies]
 python = "3.10.15"

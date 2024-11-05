@@ -41,6 +41,26 @@ services:
     depends_on:
       - redis
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile  # Assumes the Dockerfile is in the root directory
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - BROKER_URL=${BROKER_URL}
+      - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH}
+      - POSTGRES_DB=${POSTGRES_DB} 
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - DOCKER_ENV=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["python", "-m", "src.test_infra"]
+
 volumes:
   postgres_data:
 

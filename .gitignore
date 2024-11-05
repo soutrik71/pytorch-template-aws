@@ -1,2 +1,5 @@
 aws/
 *.zip
+*.tar.gz
+*.tar.bz2
+.env
