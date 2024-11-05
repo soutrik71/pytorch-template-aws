@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     redis_url: str = Field(..., env="REDIS_URL")
     flower_basic_auth: str = Field(..., env="FLOWER_BASIC_AUTH")
     broker_url: str = Field(..., env="BROKER_URL")
+    cache_backend: str = "aiocache.SimpleMemoryCache"
 
     class Config:
         env_file = ".env"

@@ -5,16 +5,23 @@ from app.crud.chat_crud import create_chat_message
 from app.tasks.chat_task import process_chat_message
 from src.number_manipulation import add_random_number
 from app.db.database import get_db
+from aiocache import caches
 
 router = APIRouter()
 
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(message: ChatMessage, db: AsyncSession = Depends(get_db)):
-    # Process user input using add_random_number
-    processed_value = add_random_number(message.user_input)
+    cache = caches.get("default")
+    cache_key = f"chat:{message.user_input}:{message.content}"
 
-    # Save message to database along with the user input and processed value
+    # Attempt to retrieve the cached response
+    cached_response = await cache.get(cache_key)
+    if cached_response:
+        return ChatResponse(**cached_response)
+
+    # Process user input if not cached
+    processed_value = add_random_number(message.user_input)
     message_id = await create_chat_message(
         db=db,
         content=message.content,
@@ -22,11 +29,17 @@ async def chat(message: ChatMessage, db: AsyncSession = Depends(get_db)):
         processed_value=processed_value,
     )
 
-    # Trigger async processing of the chat message content in the background
+    # Trigger background task
     process_chat_message.delay(message.content)
 
-    return ChatResponse(
-        message_id=message_id,
-        status="Message received",
-        processed_value=processed_value,
-    )
+    # Prepare the response data
+    response_data = {
+        "message_id": message_id,
+        "status": "Message received",
+        "processed_value": processed_value,
+    }
+
+    # Cache the response data
+    await cache.set(cache_key, response_data, ttl=300)  # Cache for 5 minutes
+
+    return ChatResponse(**response_data)
