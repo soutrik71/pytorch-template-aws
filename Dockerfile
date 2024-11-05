@@ -1,7 +1,7 @@
 # Use an official Python base image
 FROM python:3.10.15-slim
 
-# Set environment variables
+# Set environment variables for Poetry
 ENV POETRY_VERSION=1.6.1 \
     POETRY_HOME="/opt/poetry" \
     POETRY_VIRTUALENVS_IN_PROJECT=true \
@@ -20,16 +20,16 @@ WORKDIR /app
 # Copy Poetry files for dependency installation
 COPY pyproject.toml poetry.lock ./
 
-# Install dependencies with Poetry
+# Install dependencies with Poetry (without development dependencies)
 RUN poetry install --no-root --only main
 
-# Copy the source code
+# Copy the application source code
 COPY src/ src/
-# copy app
 COPY app/ app/
+COPY main.py  .
 
-# Set entrypoint to ensure Poetry's virtual environment is used
-ENTRYPOINT ["poetry", "run"]
+# Expose the port for FastAPI
+EXPOSE 8000
 
-# Default command to run `src.test_infra`
-CMD ["python", "-m", "src.test_infra"]
+# Command to run the FastAPI application with uvicorn
+CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

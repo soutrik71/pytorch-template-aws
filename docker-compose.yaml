@@ -12,6 +12,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - my_network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 30s
@@ -25,6 +27,8 @@ services:
       - "8001:8001"
     environment:
       DOCKER_ENV: 1
+    networks:
+      - my_network
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 30s
@@ -40,6 +44,8 @@ services:
       - 5557:5555
     depends_on:
       - redis
+    networks:
+      - my_network
 
   app:
     build:
@@ -59,7 +65,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: ["python", "-m", "src.test_infra"]
+    networks:
+      - my_network
+    ports:
+      - "8000:8000"
+    command: ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 volumes:
   postgres_data:

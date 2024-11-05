@@ -24,7 +24,7 @@ class Settings(BaseSettings):
         instance = cls()
         # Set the correct database URL without the +asyncpg
         instance.database_url = (
-            f"postgres://{instance.POSTGRES_USER}:{instance.POSTGRES_PASSWORD}@"
+            f"postgresql+asyncpg://{instance.POSTGRES_USER}:{instance.POSTGRES_PASSWORD}@"
             f"{'localhost' if not instance.is_docker else 'postgres'}:5432/{instance.POSTGRES_DB}"
         )
         instance.redis_url = (

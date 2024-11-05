@@ -26,7 +26,7 @@ async def test_redis_connection(redis_url: str):
 async def main():
     logger.info(f"Settings: {settings.dict()}")
 
-    await test_postgres_connection(settings.database_url)
+    await test_postgres_connection(settings.database_url.replace("+asyncpg", ""))
     await test_redis_connection(settings.redis_url)
 
 
