@@ -27,6 +27,8 @@ services:
       - "8001:8001"
     environment:
       DOCKER_ENV: 1
+      REDIS_PORT: ${REDIS_PORT}
+      REDIS_HOST: ${REDIS_HOST}
     networks:
       - my_network
     healthcheck:

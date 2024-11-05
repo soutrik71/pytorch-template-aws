@@ -12,10 +12,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to Amazon ECR
         env:
@@ -26,6 +26,16 @@ jobs:
           aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 007758426687.dkr.ecr.$AWS_REGION.amazonaws.com
 
       - name: Build Docker image
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          FLOWER_BASIC_AUTH: ${{ secrets.FLOWER_BASIC_AUTH }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BROKER_URL: ${{ secrets.BROKER_URL }}
         run: |
           docker build -t soutrik71/test .
           docker tag soutrik71/test:latest 007758426687.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/soutrik71/test:latest
@@ -35,5 +45,15 @@ jobs:
           docker push 007758426687.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/soutrik71/test:latest
 
       - name: Run Docker Compose
+        env:
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          REDIS_PORT: ${{ secrets.REDIS_PORT }}
+          REDIS_HOST: ${{ secrets.REDIS_HOST }}
+          FLOWER_BASIC_AUTH: ${{ secrets.FLOWER_BASIC_AUTH }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          BROKER_URL: ${{ secrets.BROKER_URL }}
         run: |
           docker-compose up -d --build app
