@@ -30,5 +30,6 @@ curl -o actions-runner-linux-x64-2.320.0.tar.gz -L https://github.com/actions/ru
 echo "93ac1b7ce743ee85b5d386f5c1787385ef07b3d7c728ff66ce0d3813d5f46900  actions-runner-linux-x64-2.320.0.tar.gz" | shasum -a 256 -c
 tar xzf ./actions-runner-linux-x64-2.320.0.tar.gz
 ./config.sh --url https://github.com/soutrik71/pytorch-template-aws --token A75IT2B6B7L22EQZFM6AZLLHFIVA2
+# cd actions-runner/
 ./run.sh
 ```
