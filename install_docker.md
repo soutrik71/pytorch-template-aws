@@ -33,3 +33,10 @@ tar xzf ./actions-runner-linux-x64-2.320.0.tar.gz
 # cd actions-runner/
 ./run.sh
 ```
+** Activate aws cli
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+```
