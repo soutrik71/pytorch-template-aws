@@ -1,0 +1,21 @@
+
+_target_: src.models.catdog_classifier.ViTTinyClassifier
+
+# model params
+img_size: 160
+patch_size: 16
+num_classes: 2
+embed_dim: 64
+depth: 6
+num_heads: 2
+mlp_ratio: 3.0
+pre_norm: False
+
+# optimizer params
+lr: 1e-3
+weight_decay: 1e-5
+
+# scheduler params
+factor: 0.1
+patience: 10
+min_lr: 1e-6

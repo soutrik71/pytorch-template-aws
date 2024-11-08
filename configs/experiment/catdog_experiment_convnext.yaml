@@ -1,0 +1,60 @@
+# @package _global_
+
+# to execute this experiment run:
+# python train.py experiment=catdog_ex
+
+defaults:
+  - override /paths: catdog
+  - override /data: catdog
+  - override /model: catdog_classifier_convnext
+  - override /callbacks: default
+  - override /logger: default
+  - override /trainer: default
+
+# all parameters below will be merged with parameters from default configurations set above
+# this allows you to overwrite only specified parameters
+
+seed: 42
+name: "catdog_experiment_convnext"
+
+# Logger-specific configurations
+logger:
+  aim:
+    experiment: ${name}
+  mlflow:
+    experiment_name: ${name}
+    tags:
+      model_type: "timm_classify"
+
+data:
+  batch_size: 64
+  num_workers: 8
+  pin_memory: True
+  image_size: 160
+
+model:
+  base_model: convnext_tiny.fb_in22k_ft_in1k
+  pretrained: True
+  lr: 1e-3
+  weight_decay: 1e-5
+  factor: 0.1
+  patience: 5
+  min_lr: 1e-6
+  num_classes: 2
+  kernel_sizes: 7
+
+trainer:
+  min_epochs: 1
+  max_epochs: 3
+
+callbacks:
+  model_checkpoint:
+    monitor: "val_acc"
+    mode: "max"
+    save_top_k: 1
+    save_last: True
+
+  early_stopping:
+    monitor: "val_acc"
+    patience: 3
+    mode: "max"

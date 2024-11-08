@@ -1,0 +1,10 @@
+_target_: src.datamodules.catdog_datamodule.CatDogImageDataModule
+
+data_dir: ${paths.data_dir}
+url: ${paths.data_url}
+num_workers: 4
+batch_size: 32
+train_val_split: [0.8, 0.2]
+pin_memory: False
+image_size: 160
+dataset_url: "https://download.pytorch.org/tutorials/cats_and_dogs_filtered.zip"
