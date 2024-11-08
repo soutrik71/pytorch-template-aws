@@ -1,0 +1,7 @@
+[core]
+    autostage = true
+    remote = aws_remote
+['remote "myremote"']
+    url = /tmp/dvcstore
+['remote "aws_remote"']
+    url = s3://deep-bucket-s3

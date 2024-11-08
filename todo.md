@@ -1,0 +1,11 @@
+**__Pytorch Lightning Classifier with Hydra DVC and Linting and Pytest Deployed on AWS EC2__**:
+- Data loading script with pytorch lightning datamodule
+- Pytorch Lightning Classifier
+- Hydra configuration for datamodule , trainer and callbacks
+- DVC for versioning data and model using s3 bucket
+- Linting with flake8 and black
+- Pytest for testing
+- Hyperparameter optimization with optuna executed using base package
+- Dockerized application and tested via docker-compose
+- Deployed on AWS EC2 instance using github actions
+- Github actions for CI/CD and docker image push to elastic container registry (ECR)
