@@ -1,5 +1,6 @@
 
-_target_: src.models.catdog_classifier.ViTTinyClassifier
+# model class
+_target_: src.models.catdog_model.ViTTinyClassifier
 
 # model params
 img_size: 160

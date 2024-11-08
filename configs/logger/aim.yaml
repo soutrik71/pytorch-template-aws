@@ -1,5 +1,4 @@
 aim:
-  __target__: aim.pytorch_lightning.AimLogger
   experiment: ${name}
   train_metric_prefix: train_
   test_metric_prefix: test_

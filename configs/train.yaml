@@ -7,7 +7,7 @@ defaults:
   - data: catdog
   - model: catdog_classifier
   - callbacks: default
-  - logger: null # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
+  - logger: default # set logger here or use command line (e.g. `python train.py logger=tensorboard`)
   - trainer: default
   - paths: catdog
   - hydra: default
