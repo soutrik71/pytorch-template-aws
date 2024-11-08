@@ -39,3 +39,6 @@ seed: 42
 
 # name of the experiment
 name: "dogbreed_experiment"
+
+# optimization metric
+optimization_metric: "val_acc"

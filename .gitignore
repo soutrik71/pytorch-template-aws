@@ -21,3 +21,5 @@ src/__pycache__/test_infra.cpython-310.pyc
 app/core/__pycache__/config.cpython-310.pyc
 data/
 !configs/data/
+checkpoints/
+logs/

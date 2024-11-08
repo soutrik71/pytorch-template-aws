@@ -16,7 +16,7 @@ ckpt_dir: ${paths.root_dir}/checkpoints
 artifact_dir: ${paths.root_dir}/artifacts/
 
 # download url for the dataset
-data_url: "https://storage.googleapis.com/mledu-datasets/cats_and_dogs_filtered.zip"
+data_url: "https://download.pytorch.org/tutorials/cats_and_dogs_filtered.zip"
 
 # path to output directory, created dynamically by hydra
 # path generation pattern is specified in `configs/hydra/default.yaml`

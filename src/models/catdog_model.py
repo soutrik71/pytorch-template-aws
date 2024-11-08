@@ -9,7 +9,7 @@ class ViTTinyClassifier(L.LightningModule):
     def __init__(
         self,
         img_size: int = 224,
-        num_classes: int = 2,
+        num_classes: int = 2,  # Should be 2 for binary classification
         embed_dim: int = 64,
         depth: int = 6,
         num_heads: int = 2,
@@ -40,16 +40,12 @@ class ViTTinyClassifier(L.LightningModule):
             global_pool="token",
         )
 
-        # Metrics for multi-class classification
+        # Metrics for binary classification
         metrics = {
-            "accuracy": Accuracy(task="multiclass", num_classes=num_classes),
-            "precision": Precision(
-                task="multiclass", num_classes=num_classes, average="macro"
-            ),
-            "recall": Recall(
-                task="multiclass", num_classes=num_classes, average="macro"
-            ),
-            "f1": F1Score(task="multiclass", num_classes=num_classes, average="macro"),
+            "acc": Accuracy(task="binary"),
+            "precision": Precision(task="binary"),
+            "recall": Recall(task="binary"),
+            "f1": F1Score(task="binary"),
         }
 
         # Initialize metrics for each stage

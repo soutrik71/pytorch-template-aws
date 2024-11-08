@@ -48,10 +48,21 @@ class CatDogImageDataModule(L.LightningDataModule):
 
     def setup(self, stage: Optional[str] = None):
         """Set up the train, validation, and test datasets."""
-        transform = transforms.Compose(
+
+        train_transform = transforms.Compose(
             [
                 transforms.Resize((self.image_size, self.image_size)),
                 transforms.RandomHorizontalFlip(),
+                transforms.ToTensor(),
+                transforms.Normalize(
+                    mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                ),
+            ]
+        )
+
+        test_transform = transforms.Compose(
+            [
+                transforms.Resize((self.image_size, self.image_size)),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -63,7 +74,7 @@ class CatDogImageDataModule(L.LightningDataModule):
         test_path = self.data_dir / "cats_and_dogs_filtered" / "validation"
 
         if stage == "fit" or stage is None:
-            full_train_dataset = ImageFolder(root=train_path, transform=transform)
+            full_train_dataset = ImageFolder(root=train_path, transform=train_transform)
             train_size = int(self.train_val_split[0] * len(full_train_dataset))
             val_size = len(full_train_dataset) - train_size
             self.train_dataset, self.val_dataset = random_split(
@@ -74,7 +85,7 @@ class CatDogImageDataModule(L.LightningDataModule):
             )
 
         if stage == "test" or stage is None:
-            self.test_dataset = ImageFolder(root=test_path, transform=transform)
+            self.test_dataset = ImageFolder(root=test_path, transform=test_transform)
             logger.info(f"Test dataset size: {len(self.test_dataset)} images.")
 
     def _create_dataloader(self, dataset, shuffle: bool = False) -> DataLoader:
@@ -123,7 +134,7 @@ if __name__ == "__main__":
             train_val_split=cfg.data.train_val_split,
             pin_memory=cfg.data.pin_memory,
             image_size=cfg.data.image_size,
-            url=cfg.data.dataset_url,
+            url=cfg.data.url,
         )
         datamodule.prepare_data()
         datamodule.setup()

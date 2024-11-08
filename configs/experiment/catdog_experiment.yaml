@@ -38,7 +38,7 @@ model:
 
 trainer:
   min_epochs: 1
-  max_epochs: 6
+  max_epochs: 10
 
 callbacks:
   model_checkpoint:
@@ -54,7 +54,7 @@ callbacks:
     mode: "max"
     verbose: True
 
-  model_summary:
+  rich_model_summary:
     max_depth: 1
 
   rich_progress_bar:
