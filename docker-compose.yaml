@@ -1,81 +1,69 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:16-alpine
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      DOCKER_ENV: 1
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - my_network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  redis:
-    image: redis/redis-stack:latest
-    ports:
-      - "6379:6379"
-      - "8001:8001"
-    environment:
-      DOCKER_ENV: 1
-      REDIS_PORT: ${REDIS_PORT}
-      REDIS_HOST: ${REDIS_HOST}
-    networks:
-      - my_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-
-  flower:
-    image: mher/flower:0.9.7
-    environment:
-      DOCKER_ENV: 1
-    command: ["flower", "--broker=${BROKER_URL}", "--port=5555"]
-    ports:
-      - 5557:5555
-    depends_on:
-      - redis
-    networks:
-      - my_network
-
-  app:
+  train:
     build:
       context: .
-      dockerfile: Dockerfile  # Assumes the Dockerfile is in the root directory
+    command: |
+      python -m src.train experiment=catdog_experiment ++task_name=train ++train=True ++test=False && \
+      touch /app/checkpoints/train_done.flag
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
     environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - BROKER_URL=${BROKER_URL}
-      - FLOWER_BASIC_AUTH=${FLOWER_BASIC_AUTH}
-      - POSTGRES_DB=${POSTGRES_DB} 
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - DOCKER_ENV=1
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    shm_size: '4g' 
     networks:
-      - my_network
-    ports:
-      - "8000:8000"
-    command: ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+      - default
+    env_file:
+      - .env
+
+  eval:
+    build:
+      context: .
+    command: |
+      sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train experiment=catdog_experiment ++task_name=eval ++train=False ++test=True'
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    shm_size: '4g'
+    networks:
+      - default
+    env_file:
+      - .env  
+
+  # inference:
+  #   build:
+  #     context: .
+  #   command: |
+  #     sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
+  #   volumes:
+  #     - ./data:/app/data
+  #     - ./checkpoints:/app/checkpoints
+  #     - ./artifacts:/app/artifacts
+  #     - ./logs:/app/logs
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #     - PYTHONPATH=/app
+  #   shm_size: '4g'
+  #   networks:
+  #     - default
+  #   env_file:
+  #     - .env  
 
 volumes:
-  postgres_data:
+  data:
+  checkpoints:
+  artifacts:
+  logs:
 
 networks:
-  my_network:
-    driver: bridge
+  default:

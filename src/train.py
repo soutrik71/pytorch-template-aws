@@ -23,12 +23,8 @@ import rootutils
 load_dotenv(find_dotenv(".env"))
 
 # Setup root directory
-try:
-    root = rootutils.setup_root(__file__, indicator=".project-root")
-except Exception as e:
-    root = os.getcwd()
 
-os.environ.setdefault("PROJECT_ROOT", str(root))
+root = rootutils.setup_root(__file__, indicator=".project-root")
 
 
 def initialize_callbacks(cfg: DictConfig) -> List[L.Callback]:

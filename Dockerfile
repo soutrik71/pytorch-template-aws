@@ -1,35 +1,48 @@
-# Use an official Python base image
-FROM python:3.10.15-slim
+# Stage 1: Build environment with Poetry and dependencies
+FROM python:3.10.15-slim as builder
 
-# Set environment variables for Poetry
-ENV POETRY_VERSION=1.6.1 \
-    POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_IN_PROJECT=true \
-    PYTHONUNBUFFERED=1
+LABEL maintainer="Soutrik soutrik1991@gmail.com" \
+      description="Docker image for running a Python app with dependencies managed by Poetry."
 
-# Install Poetry
-RUN apt-get update && apt-get install -y curl \
-    && curl -sSL https://install.python-poetry.org | python3 - \
-    && ln -s ${POETRY_HOME}/bin/poetry /usr/local/bin/poetry \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install Poetry and necessary system dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    curl -sSL https://install.python-poetry.org | python3 - && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# Add Poetry to the PATH explicitly
+ENV PATH="/root/.local/bin:$PATH"
+
+# Set the working directory to /app
 WORKDIR /app
 
-# Copy Poetry files for dependency installation
-COPY pyproject.toml poetry.lock ./
+# Copy pyproject.toml and poetry.lock to install dependencies
+COPY pyproject.toml poetry.lock /app/
 
-# Install dependencies with Poetry (without development dependencies)
-RUN poetry install --no-root --only main
+# Configure Poetry environment
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_CACHE_DIR=/tmp/poetry_cache
 
-# Copy the application source code
-COPY src/ src/
-COPY app/ app/
-COPY main.py  .
+# Install dependencies without installing the package itself
+RUN --mount=type=cache,target=/tmp/poetry_cache poetry install --only main --no-root
 
-# Expose the port for FastAPI
-EXPOSE 8000
+# Stage 2: Runtime environment
+FROM python:3.10.15-slim as runner
 
-# Command to run the FastAPI application with uvicorn
-CMD ["poetry", "run", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Copy application source code and necessary files
+COPY src /app/src
+COPY configs /app/configs
+COPY .project-root /app/.project-root
+COPY main.py /app/main.py
+
+# Copy virtual environment from the builder stage
+COPY --from=builder /app/.venv /app/.venv
+
+# Set the working directory to /app
+WORKDIR /app
+
+# Set the environment path to use the virtual environment
+ENV PATH="/app/.venv/bin:$PATH"
+
+# Default command
+CMD ["python", "-m", "main"]
