@@ -338,6 +338,11 @@ dvc push -r azblob
 Next we will add S3 as a remote
 
 ```bash
+dvc remote add --default aws_remote s3://mybucket
+dvc remote modify --local aws_remote access_key_id <>
+dvc remote modify --local aws_remote secret_access_key <>
+dvc remote modify --local aws_remote region ap-south-1
+dvc push -r aws_remote
 ```
 
 9. ## __HYDRA SETUP__

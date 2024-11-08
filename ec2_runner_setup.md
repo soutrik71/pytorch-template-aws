@@ -42,4 +42,12 @@ sudo apt install unzip
 unzip awscliv2.zip
 sudo ./aws/install
 aws --version
+aws configure
+
+```
+** S3 bucket operations
+```bash
+aws s3 cp data s3://deep-bucket-s3/data --recursive
+aws s3 ls s3://deep-bucket-s3
+aws s3 rm s3://deep-bucket-s3/data --recursive
 ```
