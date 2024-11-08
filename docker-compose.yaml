@@ -15,17 +15,17 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
-    shm_size: '4g' 
+    shm_size: '4g'
     networks:
       - default
     env_file:
       - .env
-
+    
   eval:
     build:
       context: .
     command: |
-      sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train experiment=catdog_experiment ++task_name=eval ++train=False ++test=True'
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train experiment=catdog_experiment ++task_name=eval ++train=False ++test=True'
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -38,13 +38,16 @@ services:
     networks:
       - default
     env_file:
-      - .env  
+      - .env
+    depends_on:
+      - train
 
+  # Uncomment if you want to use inference service in the future
   # inference:
   #   build:
   #     context: .
   #   command: |
-  #     sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
+  #     sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
   #   volumes:
   #     - ./data:/app/data
   #     - ./checkpoints:/app/checkpoints
@@ -58,6 +61,8 @@ services:
   #     - default
   #   env_file:
   #     - .env  
+  #   depends_on:
+  #     - train
 
 volumes:
   data:
