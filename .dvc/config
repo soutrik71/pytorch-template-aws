@@ -4,4 +4,5 @@
 ['remote "local_remote"']
     url = /tmp/dvclocalstore
 ['remote "aws_remote"']
-    url = s3://mybucket/data
+    url = s3://deep-bucket-s3/data
+    region = ap-south-1
