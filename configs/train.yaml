@@ -38,7 +38,7 @@ ckpt_path: ${paths.ckpt_dir}/best-checkpoint.ckpt
 seed: 42
 
 # name of the experiment
-name: "dogbreed_experiment"
+name: "catdog_experiment"
 
 # optimization metric
 optimization_metric: "val_acc"
