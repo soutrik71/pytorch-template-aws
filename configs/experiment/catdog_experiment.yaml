@@ -18,10 +18,11 @@ seed: 42
 name: "catdog_experiment"
 
 data:
-  batch_size: 64
+  dataset: "cats_and_dogs_filtered"
+  batch_size: 32
   num_workers: 8
   pin_memory: True
-  image_size: 160
+  image_size: 224
 
 model:
   lr: 1e-3

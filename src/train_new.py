@@ -122,7 +122,7 @@ def run_test_module(
     return test_metrics[0] if test_metrics else {}
 
 
-@hydra.main(config_path="../configs", config_name="train", version_base="1.1")
+@hydra.main(config_path="../configs", config_name="train", version_base="1.3")
 def setup_run_trainer(cfg: DictConfig):
     """Set up and run the Trainer for training and testing."""
     # Display configuration

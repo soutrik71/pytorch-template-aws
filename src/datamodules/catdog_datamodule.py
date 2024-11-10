@@ -14,7 +14,8 @@ class CatDogImageDataModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_dir: Union[str, Path] = "data",
+        data_root: Union[str, Path] = "data",
+        data_dir: Union[str, Path] = "cats_and_dogs_filtered",
         batch_size: int = 32,
         num_workers: int = 4,
         train_val_split: List[float] = [0.8, 0.2],
@@ -23,7 +24,8 @@ class CatDogImageDataModule(L.LightningDataModule):
         url: str = "https://download.pytorch.org/tutorials/cats_and_dogs_filtered.zip",
     ):
         super().__init__()
-        self.data_dir = Path(data_dir)
+        self.data_root = Path(data_root)
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
         self.train_val_split = train_val_split
@@ -38,21 +40,27 @@ class CatDogImageDataModule(L.LightningDataModule):
 
     def prepare_data(self):
         """Download the dataset if it doesn't exist."""
-        dataset_path = self.data_dir / "cats_and_dogs_filtered"
-        if not dataset_path.exists():
+        self.dataset_path = self.data_root / self.data_dir
+        if not self.dataset_path.exists():
             logger.info("Downloading and extracting dataset.")
             download_and_extract_archive(
-                url=self.url, download_root=self.data_dir, remove_finished=True
+                url=self.url, download_root=self.data_root, remove_finished=True
             )
             logger.info("Download completed.")
 
     def setup(self, stage: Optional[str] = None):
         """Set up the train, validation, and test datasets."""
 
+        self.prepare_data()
+
         train_transform = transforms.Compose(
             [
                 transforms.Resize((self.image_size, self.image_size)),
-                transforms.RandomHorizontalFlip(),
+                transforms.RandomHorizontalFlip(0.1),
+                transforms.RandomRotation(10),
+                transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
+                transforms.RandomAutocontrast(0.1),
+                transforms.RandomAdjustSharpness(2, 0.1),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -70,11 +78,12 @@ class CatDogImageDataModule(L.LightningDataModule):
             ]
         )
 
-        train_path = self.data_dir / "cats_and_dogs_filtered" / "train"
-        test_path = self.data_dir / "cats_and_dogs_filtered" / "validation"
+        train_path = self.dataset_path / "train"
+        test_path = self.dataset_path / "test"
 
         if stage == "fit" or stage is None:
             full_train_dataset = ImageFolder(root=train_path, transform=train_transform)
+            self.class_names = full_train_dataset.classes
             train_size = int(self.train_val_split[0] * len(full_train_dataset))
             val_size = len(full_train_dataset) - train_size
             self.train_dataset, self.val_dataset = random_split(
@@ -107,43 +116,42 @@ class CatDogImageDataModule(L.LightningDataModule):
     def test_dataloader(self) -> DataLoader:
         return self._create_dataloader(self.test_dataset)
 
+    def get_class_names(self) -> List[str]:
+        return self.class_names
+
 
 if __name__ == "__main__":
-    from omegaconf import DictConfig, OmegaConf
+    # Test the CatDogImageDataModule
     import hydra
+    from omegaconf import DictConfig, OmegaConf
     import rootutils
 
-    # Setup root directory
-    root = rootutils.setup_root(__file__, indicator=".project-root", pythonpath=True)
-    logger.info(f"Root directory: {root}")
+    root = rootutils.setup_root(__file__, indicator=".project-root")
 
     @hydra.main(
-        version_base="1.3",
-        config_path=str(root / "configs"),
-        config_name="train",
+        config_path=str(root / "configs"), version_base="1.3", config_name="train"
     )
-    def main(cfg: DictConfig):
-        # Log configuration
-        logger.info("Config:\n" + OmegaConf.to_yaml(cfg))
-
-        # Initialize DataModule
+    def test_datamodule(cfg: DictConfig):
+        logger.info(f"Config:\n{OmegaConf.to_yaml(cfg)}")
         datamodule = CatDogImageDataModule(
+            data_root=cfg.paths.data_dir,
             data_dir=cfg.data.data_dir,
             batch_size=cfg.data.batch_size,
             num_workers=cfg.data.num_workers,
             train_val_split=cfg.data.train_val_split,
             pin_memory=cfg.data.pin_memory,
             image_size=cfg.data.image_size,
-            url=cfg.data.url,
         )
-        datamodule.prepare_data()
-        datamodule.setup()
+        datamodule.setup(stage="fit")
+        train_loader = datamodule.train_dataloader()
+        val_loader = datamodule.val_dataloader()
+        datamodule.setup(stage="test")
+        test_loader = datamodule.test_dataloader()
+        class_names = datamodule.get_class_names()
 
-        # Log DataLoader sizes
-        logger.info(f"Train DataLoader: {len(datamodule.train_dataloader())} batches")
-        logger.info(
-            f"Validation DataLoader: {len(datamodule.val_dataloader())} batches"
-        )
-        logger.info(f"Test DataLoader: {len(datamodule.test_dataloader())} batches")
+        logger.info(f"Train loader: {len(train_loader)} batches")
+        logger.info(f"Validation loader: {len(val_loader)} batches")
+        logger.info(f"Test loader: {len(test_loader)} batches")
+        logger.info(f"Class names: {class_names}")
 
-    main()
+    test_datamodule()
