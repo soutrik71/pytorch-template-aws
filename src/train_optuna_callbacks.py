@@ -15,8 +15,10 @@ from src.utils.logging_utils import setup_logger, task_wrapper
 from loguru import logger
 import rootutils
 from lightning.pytorch.loggers import Logger
+from lightning.pytorch.callbacks import Callback
 import optuna
 from lightning.pytorch import Trainer
+import json
 
 # Load environment variables
 load_dotenv(find_dotenv(".env"))
@@ -25,7 +27,7 @@ load_dotenv(find_dotenv(".env"))
 root = rootutils.setup_root(__file__, indicator=".project-root")
 
 
-def instantiate_callbacks(callback_cfg: DictConfig) -> List[L.Callback]:
+def instantiate_callbacks(callback_cfg: DictConfig) -> List[Callback]:
     """Instantiate and return a list of callbacks from the configuration."""
     callbacks: List[L.Callback] = []
 
@@ -125,7 +127,7 @@ def run_test_module(
     return test_metrics[0] if test_metrics else {}
 
 
-def objective(trial: optuna.trial.Trial, cfg: DictConfig, callbacks: List[L.Callback]):
+def objective(trial: optuna.trial.Trial, cfg: DictConfig, callbacks: List[Callback]):
     """Objective function for Optuna hyperparameter tuning."""
 
     # Sample hyperparameters for the model
@@ -143,9 +145,6 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, callbacks: List[L.Call
 
     # Trainer configuration with passed callbacks
     trainer = Trainer(**cfg.trainer, logger=loggers, callbacks=callbacks)
-
-    # Clear checkpoint directory
-    clear_checkpoint_directory(cfg.paths.ckpt_dir)
 
     # Train and get val_acc for each epoch
     val_accuracies = train_module(data_module, model, trainer)
@@ -177,13 +176,16 @@ def setup_trainer(cfg: DictConfig):
     logger.info(f"Callbacks: {callbacks}")
 
     if cfg.get("train", False):
+        # Clear checkpoint directory
+        clear_checkpoint_directory(cfg.paths.ckpt_dir)
+        # find the best hyperparameters using Optuna and train the model
         pruner = optuna.pruners.MedianPruner()
         study = optuna.create_study(
             direction="maximize", pruner=pruner, study_name="pytorch_lightning_optuna"
         )
         study.optimize(
             lambda trial: objective(trial, cfg, callbacks),
-            n_trials=5,
+            n_trials=3,
             show_progress_bar=True,
         )
 
@@ -194,7 +196,26 @@ def setup_trainer(cfg: DictConfig):
         for key, value in best_trial.params.items():
             logger.info(f"  {key}: {value}")
 
+        # write the best hyperparameters to the config
+        best_hyperparams = {key: value for key, value in best_trial.params.items()}
+        best_hyperparams_path = Path(cfg.paths.ckpt_dir) / "best_hyperparams.json"
+        with open(best_hyperparams_path, "w") as f:
+            json.dump(best_hyperparams, f)
+        logger.info(f"Best hyperparameters saved to {best_hyperparams_path}")
+
     if cfg.get("test", False):
+        best_hyperparams_path = Path(cfg.paths.ckpt_dir) / "best_hyperparams.json"
+        if best_hyperparams_path.exists():
+            with open(best_hyperparams_path, "r") as f:
+                best_hyperparams = json.load(f)
+            cfg.model.update(best_hyperparams)
+            logger.info(f"Loaded best hyperparameters for testing: {best_hyperparams}")
+        else:
+            logger.error(
+                "Best hyperparameters not found! Using default hyperparameters."
+            )
+            raise FileNotFoundError("Best hyperparameters not found!")
+
         data_module: L.LightningDataModule = hydra.utils.instantiate(cfg.data)
         model: L.LightningModule = hydra.utils.instantiate(cfg.model)
         trainer = Trainer(**cfg.trainer, logger=instantiate_loggers(cfg.logger))
