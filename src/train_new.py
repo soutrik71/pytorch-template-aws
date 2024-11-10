@@ -160,7 +160,7 @@ def setup_run_trainer(cfg: DictConfig):
     # Set up callbacks, loggers, and Trainer
     callbacks = instantiate_callbacks(cfg.callbacks)
     logger.info(f"Callbacks: {callbacks}")
-    loggers = instantiate_loggers(cfg.loggers)
+    loggers = instantiate_loggers(cfg.logger)
     logger.info(f"Loggers: {loggers}")
     trainer: L.Trainer = hydra.utils.instantiate(
         cfg.trainer, callbacks=callbacks, logger=loggers

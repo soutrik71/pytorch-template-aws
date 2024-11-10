@@ -1,15 +1,16 @@
 import lightning as L
-import torch
-from torch import nn, optim
-from torchmetrics import Accuracy, Precision, Recall, F1Score
+import torch.nn.functional as F
+from torch import optim
+from torchmetrics.classification import Accuracy, F1Score
 from timm.models import VisionTransformer
+import torch
 
 
 class ViTTinyClassifier(L.LightningModule):
     def __init__(
         self,
         img_size: int = 224,
-        num_classes: int = 2,  # Should be 2 for binary classification
+        num_classes: int = 2,  # Binary classification with two classes
         embed_dim: int = 64,
         depth: int = 6,
         num_heads: int = 2,
@@ -25,7 +26,7 @@ class ViTTinyClassifier(L.LightningModule):
         super().__init__()
         self.save_hyperparameters()
 
-        # Create ViT model
+        # Vision Transformer model initialization
         self.model = VisionTransformer(
             img_size=img_size,
             patch_size=patch_size,
@@ -35,51 +36,40 @@ class ViTTinyClassifier(L.LightningModule):
             depth=depth,
             num_heads=num_heads,
             mlp_ratio=mlp_ratio,
-            qkv_bias=False,
+            qkv_bias=True,
             pre_norm=pre_norm,
             global_pool="token",
         )
 
-        # Metrics for binary classification
-        metrics = {
-            "acc": Accuracy(task="binary"),
-            "precision": Precision(task="binary"),
-            "recall": Recall(task="binary"),
-            "f1": F1Score(task="binary"),
-        }
+        # Define accuracy and F1 metrics for binary classification
+        self.train_acc = Accuracy(task="binary")
+        self.val_acc = Accuracy(task="binary")
+        self.test_acc = Accuracy(task="binary")
 
-        # Initialize metrics for each stage
-        self.train_metrics = nn.ModuleDict(
-            {name: metric.clone() for name, metric in metrics.items()}
-        )
-        self.val_metrics = nn.ModuleDict(
-            {name: metric.clone() for name, metric in metrics.items()}
-        )
-        self.test_metrics = nn.ModuleDict(
-            {name: metric.clone() for name, metric in metrics.items()}
-        )
-
-        # Loss function
-        self.criterion = nn.CrossEntropyLoss()
+        self.train_f1 = F1Score(task="binary")
+        self.val_f1 = F1Score(task="binary")
+        self.test_f1 = F1Score(task="binary")
 
     def forward(self, x):
         return self.model(x)
 
-    def _shared_step(self, batch, stage: str):
+    def _shared_step(self, batch, stage):
         x, y = batch
-        logits = self(x)
-        loss = self.criterion(logits, y)
-        preds = logits.argmax(dim=1)
+        logits = self(x)  # Model output shape: [batch_size, num_classes]
+        loss = F.cross_entropy(logits, y)  # Cross-entropy for binary classification
+        preds = torch.argmax(logits, dim=1)  # Predicted class (0 or 1)
 
-        # Get appropriate metric dictionary based on stage
-        metrics = getattr(self, f"{stage}_metrics")
-        metric_logs = {
-            f"{stage}_{name}": metric(preds, y) for name, metric in metrics.items()
-        }
+        # Update and log metrics
+        acc = getattr(self, f"{stage}_acc")
+        f1 = getattr(self, f"{stage}_f1")
+        acc(preds, y)
+        f1(preds, y)
 
-        # Log metrics
-        self.log(f"{stage}_loss", loss, prog_bar=True)
-        self.log_dict(metric_logs, prog_bar=True, on_step=False, on_epoch=True)
+        # Logging of metrics and loss
+        self.log(f"{stage}_loss", loss, prog_bar=True, on_epoch=True)
+        self.log(f"{stage}_acc", acc, prog_bar=True, on_epoch=True)
+        self.log(f"{stage}_f1", f1, prog_bar=True, on_epoch=True)
+
         return loss
 
     def training_step(self, batch, batch_idx):
@@ -100,6 +90,7 @@ class ViTTinyClassifier(L.LightningModule):
 
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,
+            mode="min",
             factor=self.hparams.factor,
             patience=self.hparams.patience,
             min_lr=self.hparams.min_lr,
@@ -113,3 +104,8 @@ class ViTTinyClassifier(L.LightningModule):
                 "interval": "epoch",
             },
         }
+
+
+if __name__ == "__main__":
+    model = ViTTinyClassifier()
+    print(model)

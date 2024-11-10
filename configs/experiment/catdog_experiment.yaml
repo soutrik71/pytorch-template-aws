@@ -18,28 +18,28 @@ seed: 42
 name: "catdog_experiment"
 
 data:
-  dataset: "cats_and_dogs_filtered"
-  batch_size: 32
+  data_dir: "cats_and_dogs_filtered"
+  batch_size: 64
   num_workers: 8
   pin_memory: True
   image_size: 224
 
 model:
-  lr: 1e-3
+  lr: 5e-5
   weight_decay: 1e-5
-  factor: 0.1
-  patience: 10
+  factor: 0.5
+  patience: 5
   min_lr: 1e-6
   num_classes: 2
   patch_size: 16
-  embed_dim: 64
-  depth: 6
-  num_heads: 2
-  mlp_ratio: 3
+  embed_dim: 256
+  depth: 4
+  num_heads: 4
+  mlp_ratio: 4
 
 trainer:
   min_epochs: 1
-  max_epochs: 10
+  max_epochs: 6
 
 callbacks:
   model_checkpoint:

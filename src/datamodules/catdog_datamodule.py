@@ -14,7 +14,7 @@ class CatDogImageDataModule(L.LightningDataModule):
 
     def __init__(
         self,
-        data_root: Union[str, Path] = "data",
+        root_dir: Union[str, Path] = "data",
         data_dir: Union[str, Path] = "cats_and_dogs_filtered",
         batch_size: int = 32,
         num_workers: int = 4,
@@ -24,7 +24,7 @@ class CatDogImageDataModule(L.LightningDataModule):
         url: str = "https://download.pytorch.org/tutorials/cats_and_dogs_filtered.zip",
     ):
         super().__init__()
-        self.data_root = Path(data_root)
+        self.root_dir = Path(root_dir)
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.num_workers = num_workers
@@ -40,11 +40,11 @@ class CatDogImageDataModule(L.LightningDataModule):
 
     def prepare_data(self):
         """Download the dataset if it doesn't exist."""
-        self.dataset_path = self.data_root / self.data_dir
+        self.dataset_path = self.root_dir / self.data_dir
         if not self.dataset_path.exists():
             logger.info("Downloading and extracting dataset.")
             download_and_extract_archive(
-                url=self.url, download_root=self.data_root, remove_finished=True
+                url=self.url, download_root=self.root_dir, remove_finished=True
             )
             logger.info("Download completed.")
 
@@ -56,11 +56,9 @@ class CatDogImageDataModule(L.LightningDataModule):
         train_transform = transforms.Compose(
             [
                 transforms.Resize((self.image_size, self.image_size)),
-                transforms.RandomHorizontalFlip(0.1),
-                transforms.RandomRotation(10),
-                transforms.RandomAffine(0, shear=10, scale=(0.8, 1.2)),
-                transforms.RandomAutocontrast(0.1),
-                transforms.RandomAdjustSharpness(2, 0.1),
+                transforms.RandomHorizontalFlip(0.5),  # Flip probability increased
+                transforms.RandomRotation(5),  # Reduced rotation for stability
+                transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2),
                 transforms.ToTensor(),
                 transforms.Normalize(
                     mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -134,7 +132,7 @@ if __name__ == "__main__":
     def test_datamodule(cfg: DictConfig):
         logger.info(f"Config:\n{OmegaConf.to_yaml(cfg)}")
         datamodule = CatDogImageDataModule(
-            data_root=cfg.paths.data_dir,
+            root_dir=cfg.data.root_dir,
             data_dir=cfg.data.data_dir,
             batch_size=cfg.data.batch_size,
             num_workers=cfg.data.num_workers,

@@ -3,13 +3,13 @@
 _target_: src.models.catdog_model.ViTTinyClassifier
 
 # model params
-img_size: 160
+img_size: ${data.image_size}
 patch_size: 16
 num_classes: 2
-embed_dim: 64
+embed_dim: 128
 depth: 6
-num_heads: 2
-mlp_ratio: 3.0
+num_heads: 4
+mlp_ratio: 4
 pre_norm: False
 
 # optimizer params
