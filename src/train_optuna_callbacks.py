@@ -203,6 +203,10 @@ def setup_trainer(cfg: DictConfig):
             json.dump(best_hyperparams, f, indent=4)
         logger.info(f"Best hyperparameters saved to {best_hyperparams_path}")
 
+        # train_done.flag file to indicate training completion in checkpoints directory
+        with open(Path(cfg.paths.ckpt_dir) / "train_done.flag", "w") as f:
+            f.write("Training completed successfully!")
+
     # Testing phase with best hyperparameters
     if cfg.get("test", False):
         best_hyperparams_path = Path(cfg.paths.ckpt_dir) / "best_hyperparams.json"
