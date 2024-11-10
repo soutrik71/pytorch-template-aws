@@ -168,43 +168,46 @@ def setup_trainer(cfg: DictConfig):
 
     setup_logger(
         Path(cfg.paths.log_dir)
-        / ("train.log" if cfg.task_name == "train" else "eval.log")
+        / ("train.log" if cfg.task_name == "train" else "test.log")
     )
 
     # Instantiate callbacks
     callbacks = instantiate_callbacks(cfg.callbacks)
     logger.info(f"Callbacks: {callbacks}")
 
+    # Training phase with Optuna
     if cfg.get("train", False):
-        # Clear checkpoint directory
         clear_checkpoint_directory(cfg.paths.ckpt_dir)
-        # find the best hyperparameters using Optuna and train the model
+
+        # Optuna study setup
         pruner = optuna.pruners.MedianPruner()
         study = optuna.create_study(
             direction="maximize", pruner=pruner, study_name="pytorch_lightning_optuna"
         )
         study.optimize(
             lambda trial: objective(trial, cfg, callbacks),
-            n_trials=3,
+            n_trials=cfg.n_trials,
             show_progress_bar=True,
         )
 
-        # Log best trial results
+        # Log best trial results and save hyperparameters
         best_trial = study.best_trial
         logger.info(f"Best trial number: {best_trial.number}")
         logger.info(f"Best trial value (val_acc): {best_trial.value}")
-        for key, value in best_trial.params.items():
-            logger.info(f"  {key}: {value}")
+        best_hyperparams = best_trial.params
+        logger.info(f"Best hyperparameters: {best_hyperparams}")
 
-        # write the best hyperparameters to the config
-        best_hyperparams = {key: value for key, value in best_trial.params.items()}
+        # Save best hyperparameters to JSON
         best_hyperparams_path = Path(cfg.paths.ckpt_dir) / "best_hyperparams.json"
         with open(best_hyperparams_path, "w") as f:
-            json.dump(best_hyperparams, f)
+            json.dump(best_hyperparams, f, indent=4)
         logger.info(f"Best hyperparameters saved to {best_hyperparams_path}")
 
+    # Testing phase with best hyperparameters
     if cfg.get("test", False):
         best_hyperparams_path = Path(cfg.paths.ckpt_dir) / "best_hyperparams.json"
+        logger.info(f"Testing with best hyperparameters from {best_hyperparams_path}")
+
         if best_hyperparams_path.exists():
             with open(best_hyperparams_path, "r") as f:
                 best_hyperparams = json.load(f)
@@ -212,10 +215,11 @@ def setup_trainer(cfg: DictConfig):
             logger.info(f"Loaded best hyperparameters for testing: {best_hyperparams}")
         else:
             logger.error(
-                "Best hyperparameters not found! Using default hyperparameters."
+                "Best hyperparameters not found! Ensure training has run with `train=True` and saved the hyperparameters."
             )
             raise FileNotFoundError("Best hyperparameters not found!")
 
+        # Initialize data module, model, and trainer for testing
         data_module: L.LightningDataModule = hydra.utils.instantiate(cfg.data)
         model: L.LightningModule = hydra.utils.instantiate(cfg.model)
         trainer = Trainer(**cfg.trainer, logger=instantiate_loggers(cfg.logger))

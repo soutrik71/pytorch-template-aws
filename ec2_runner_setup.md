@@ -1,6 +1,22 @@
 **Install docker and docker-compose on Ubuntu 22.04**
+__PreRequisites__:
 
-Install docker
+    * Have an aws account with a user that has the necessary permissions
+    * Have the access key either on env variables or in the github actions secrets
+    * Have an ec2 runner instance running/created in the aws account
+    * Have a s3 bucket created in the aws account
+    * Have aws container registry created in the aws account 
+__Local VM setup__:
+    * Install aws configure and setup the access key and secret key and the right zone
+        ```bash
+        curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+        unzip awscliv2.zip
+        sudo ./aws/install   
+        aws configure
+        ```
+    
+
+__Install docker__:
 ```bash
 sudo apt update
 sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
@@ -16,7 +32,7 @@ sudo reboot
 docker --version
 docker ps
 ```
-Install docker-compose
+__Install docker-compose__:
 ```bash
 sudo rm /usr/local/bin/docker-compose
 sudo curl -L "https://github.com/docker/compose/releases/download/v2.30.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
@@ -24,7 +40,7 @@ sudo chmod +x /usr/local/bin/docker-compose
 docker-compose --version
 ```
 
-** Github actions self-hosted runner
+__Github actions self-hosted runner__:
 ```bash
 mkdir actions-runner && cd actions-runner
 curl -o actions-runner-linux-x64-2.320.0.tar.gz -L https://github.com/actions/runner/releases/download/v2.320.0/actions-runner-linux-x64-2.320.0.tar.gz
@@ -35,7 +51,7 @@ tar xzf ./actions-runner-linux-x64-2.320.0.tar.gz
 ./run.sh
 # https://github.com/soutrik71/pytorch-template-aws/settings/actions/runners/new?arch=x64&os=linux
 ```
-** Activate aws cli
+__Activate aws cli__:
 ```bash
 curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 sudo apt install unzip
@@ -45,7 +61,7 @@ aws --version
 aws configure
 
 ```
-** S3 bucket operations
+__S3 bucket operations__:
 ```bash
 aws s3 cp data s3://deep-bucket-s3/data --recursive
 aws s3 ls s3://deep-bucket-s3
