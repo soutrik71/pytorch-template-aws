@@ -25,6 +25,25 @@ load_dotenv(find_dotenv(".env"))
 root = rootutils.setup_root(__file__, indicator=".project-root")
 
 
+def instantiate_callbacks(callback_cfg: DictConfig) -> List[L.Callback]:
+    """Instantiate and return a list of callbacks from the configuration."""
+    callbacks: List[L.Callback] = []
+
+    if not callback_cfg:
+        logger.warning("No callback configs found! Skipping..")
+        return callbacks
+
+    if not isinstance(callback_cfg, DictConfig):
+        raise TypeError("Callbacks config must be a DictConfig!")
+
+    for _, cb_conf in callback_cfg.items():
+        if "_target_" in cb_conf:
+            logger.info(f"Instantiating callback <{cb_conf._target_}>")
+            callbacks.append(hydra.utils.instantiate(cb_conf))
+
+    return callbacks
+
+
 def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
     """Instantiate and return a list of loggers from the configuration."""
     loggers_ls: List[Logger] = []
@@ -106,7 +125,7 @@ def run_test_module(
     return test_metrics[0] if test_metrics else {}
 
 
-def objective(trial: optuna.trial.Trial, cfg: DictConfig):
+def objective(trial: optuna.trial.Trial, cfg: DictConfig, callbacks: List[L.Callback]):
     """Objective function for Optuna hyperparameter tuning."""
 
     # Sample hyperparameters for the model
@@ -122,8 +141,8 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig):
     # Set up logger
     loggers = instantiate_loggers(cfg.logger)
 
-    # Trainer configuration without pruning callback
-    trainer = Trainer(**cfg.trainer, logger=loggers)
+    # Trainer configuration with passed callbacks
+    trainer = Trainer(**cfg.trainer, logger=loggers, callbacks=callbacks)
 
     # Clear checkpoint directory
     clear_checkpoint_directory(cfg.paths.ckpt_dir)
@@ -153,13 +172,19 @@ def setup_trainer(cfg: DictConfig):
         / ("train.log" if cfg.task_name == "train" else "eval.log")
     )
 
+    # Instantiate callbacks
+    callbacks = instantiate_callbacks(cfg.callbacks)
+    logger.info(f"Callbacks: {callbacks}")
+
     if cfg.get("train", False):
         pruner = optuna.pruners.MedianPruner()
         study = optuna.create_study(
             direction="maximize", pruner=pruner, study_name="pytorch_lightning_optuna"
         )
         study.optimize(
-            lambda trial: objective(trial, cfg), n_trials=3, show_progress_bar=True
+            lambda trial: objective(trial, cfg, callbacks),
+            n_trials=5,
+            show_progress_bar=True,
         )
 
         # Log best trial results

@@ -39,7 +39,7 @@ model:
 
 trainer:
   min_epochs: 1
-  max_epochs: 6
+  max_epochs: 5
 
 callbacks:
   model_checkpoint:
