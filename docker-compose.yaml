@@ -6,7 +6,8 @@ services:
       context: .
     command: |
       python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False && \
-      touch /app/checkpoints/train_done.flag
+      python -m src.create_artifacts && \
+      touch ./checkpoints/train_done.flag
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -25,7 +26,7 @@ services:
     build:
       context: .
     command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=eval ++train=False ++test=True'
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True'
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -42,27 +43,26 @@ services:
     depends_on:
       - train
 
-  # Uncomment if you want to use inference service in the future
-  # inference:
-  #   build:
-  #     context: .
-  #   command: |
-  #     sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
-  #   volumes:
-  #     - ./data:/app/data
-  #     - ./checkpoints:/app/checkpoints
-  #     - ./artifacts:/app/artifacts
-  #     - ./logs:/app/logs
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #     - PYTHONPATH=/app
-  #   shm_size: '4g'
-  #   networks:
-  #     - default
-  #   env_file:
-  #     - .env  
-  #   depends_on:
-  #     - train
+  inference:
+    build:
+      context: .
+    command: |
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    shm_size: '4g'
+    networks:
+      - default
+    env_file:
+      - .env  
+    depends_on:
+      - train
 
 volumes:
   data:

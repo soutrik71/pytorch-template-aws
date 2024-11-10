@@ -386,3 +386,11 @@ dvc repro
    python -m src.train --multirun experiment=catdog_experiment_convnext ++task_name=train ++train=True ++test=False hparam=catdog_classifier_covnext
    python -m src.create_artifacts
   ```
+
+14. ## __Latest Execution Command__
+
+```bash
+python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False
+python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True
+python -m src.infer experiment=catdog_experiment
+```

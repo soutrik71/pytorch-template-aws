@@ -3,7 +3,8 @@ stages:
     cmd: docker-compose run --rm train
     deps:
       - docker-compose.yaml
-      - src/train.py
+      - src/train_optuna_callbacks.py
+      - src/create_artifacts.py
       - data
     outs:
       - checkpoints/best-checkpoint.ckpt
