@@ -1,7 +1,7 @@
 """
 Train and evaluate a model using PyTorch Lightning.
 Initializes the DataModule, Model, Trainer, and runs training and testing.
-Initializes loggers and callbacks from the configuration using Hydra configuration but with a more modular approach without direct instantiation.
+Initializes loggers and callbacks from the configuration using Hydra and target paths from the configuration.
 """
 
 import os
@@ -10,20 +10,14 @@ from pathlib import Path
 from typing import List
 import torch
 import lightning as L
-from lightning.pytorch.loggers import Logger, TensorBoardLogger, CSVLogger
-from lightning.pytorch.callbacks import (
-    ModelCheckpoint,
-    EarlyStopping,
-    RichModelSummary,
-    RichProgressBar,
-)
 from dotenv import load_dotenv, find_dotenv
 import hydra
 from omegaconf import DictConfig, OmegaConf
-from src.datamodules.catdog_datamodule import CatDogImageDataModule
 from src.utils.logging_utils import setup_logger, task_wrapper
 from loguru import logger
 import rootutils
+from lightning.pytorch.loggers import Logger
+from lightning.pytorch.callbacks import Callback
 
 # Load environment variables
 load_dotenv(find_dotenv(".env"))
@@ -33,24 +27,42 @@ load_dotenv(find_dotenv(".env"))
 root = rootutils.setup_root(__file__, indicator=".project-root")
 
 
-def initialize_callbacks(cfg: DictConfig) -> List[L.Callback]:
-    """Initialize callbacks based on configuration."""
-    callback_classes = {
-        "model_checkpoint": ModelCheckpoint,
-        "early_stopping": EarlyStopping,
-        "rich_model_summary": RichModelSummary,
-        "rich_progress_bar": RichProgressBar,
-    }
-    return [callback_classes[name](**params) for name, params in cfg.callbacks.items()]
+def instantiate_callbacks(callback_cfg: DictConfig) -> List[Callback]:
+    """Instantiate and return a list of callbacks from the configuration."""
+    callbacks_ls: List[L.Callback] = []
+
+    if not callback_cfg:
+        logger.warning("No callback configs found! Skipping..")
+        return None
+
+    if not isinstance(callback_cfg, DictConfig):
+        raise TypeError("Callbacks config must be a DictConfig!")
+
+    for _, cb_conf in callback_cfg.items():
+        if "_target_" in cb_conf:
+            logger.info(f"Instantiating callback <{cb_conf._target_}>")
+            callbacks_ls.append(hydra.utils.instantiate(cb_conf))
+
+    return callbacks_ls
 
 
-def initialize_loggers(cfg: DictConfig) -> List[Logger]:
-    """Initialize loggers based on configuration."""
-    logger_classes = {
-        "tensorboard": TensorBoardLogger,
-        "csv": CSVLogger,
-    }
-    return [logger_classes[name](**params) for name, params in cfg.logger.items()]
+def instantiate_loggers(logger_cfg: DictConfig) -> List[Logger]:
+    """Instantiate and return a list of loggers from the configuration."""
+    loggers_ls: List[Logger] = []
+
+    if not logger_cfg:
+        logger.warning("No logger configs found! Skipping..")
+        return loggers_ls
+
+    if not isinstance(logger_cfg, DictConfig):
+        raise TypeError("Logger config must be a DictConfig!")
+
+    for _, lg_conf in logger_cfg.items():
+        if "_target_" in lg_conf:
+            logger.info(f"Instantiating logger <{lg_conf._target_}>")
+            loggers_ls.append(hydra.utils.instantiate(lg_conf))
+
+    return loggers_ls
 
 
 def load_checkpoint_if_available(ckpt_path: str) -> str:
@@ -146,9 +158,9 @@ def setup_run_trainer(cfg: DictConfig):
     L.seed_everything(cfg.seed, workers=True)
 
     # Set up callbacks, loggers, and Trainer
-    callbacks = initialize_callbacks(cfg)
+    callbacks = instantiate_callbacks(cfg.callbacks)
     logger.info(f"Callbacks: {callbacks}")
-    loggers = initialize_loggers(cfg)
+    loggers = instantiate_loggers(cfg.loggers)
     logger.info(f"Loggers: {loggers}")
     trainer: L.Trainer = hydra.utils.instantiate(
         cfg.trainer, callbacks=callbacks, logger=loggers

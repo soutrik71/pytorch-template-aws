@@ -1,5 +1,4 @@
 _target_: src.datamodules.catdog_datamodule.CatDogImageDataModule
-
 data_dir: ${paths.data_dir}
 url: ${paths.data_url}
 num_workers: 4
