@@ -1,15 +1,14 @@
 name: Deploy PyTorch Training to ECR with Docker Compose
 
 on:
-  workflow_run:
-    workflows: ["CI Pipeline"]
-    types:
-      - completed
+  push:
+    branches:
+      - main
+      - feat/pytorch-catdog-setup
 
 jobs:
   deploy:
     runs-on: self-hosted
-    if: github.ref_name == 'main' || github.ref_name == 'feat/pytorch-catdog-setup'
 
     steps:
       - name: Checkout repository
@@ -25,44 +24,32 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Create .env file
-        run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image with .env
+      - name: Run Docker Compose for train service
         env:
-          REGISTRY: ${{ secrets.AWS_REGISTRY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          docker-compose up -d --build train
+
+      - name: Build, tag, and push Docker image to Amazon ECR
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: soutrik71/pytorch_catdog
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
-
-      - name: Run Docker Compose for train service
-        run: |
-          docker-compose up -d --build train  # Start only the `train` service
-
-      - name: Tag Docker image
-        env:
-          REGISTRY: ${{ secrets.AWS_REGISTRY }}
-          REPOSITORY: soutrik71/pytorch_catdog
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
-          docker tag $REGISTRY/$REPOSITORY:$IMAGE_TAG $REGISTRY/$REPOSITORY:latest
-
-      - name: Push Docker image to ECR
-        env:
-          REGISTRY: ${{ secrets.AWS_REGISTRY }}
-          REPOSITORY: soutrik71/pytorch_catdog
-          IMAGE_TAG: ${{ github.sha }}
-        run: |
           docker push $REGISTRY/$REPOSITORY:$IMAGE_TAG
+          docker tag $REGISTRY/$REPOSITORY:$IMAGE_TAG $REGISTRY/$REPOSITORY:latest
           docker push $REGISTRY/$REPOSITORY:latest
 
       - name: Pull Docker image from ECR and verify
         env:
-          REGISTRY: ${{ secrets.AWS_REGISTRY }}
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           REPOSITORY: soutrik71/pytorch_catdog
           IMAGE_TAG: ${{ github.sha }}
         run: |
