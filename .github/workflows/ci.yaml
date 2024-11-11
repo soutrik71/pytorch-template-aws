@@ -75,7 +75,7 @@ jobs:
         run: poetry run flake8 . --exclude=.venv,tests,notebooks
 
       - name: black
-        run: poetry run black . --exclude=.venv,tests,notebooks
+        run: poetry run black . --exclude="(\.venv|tests|notebooks)"
 
   pytorch_code_test:
     name: Test PyTorch code
