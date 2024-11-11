@@ -4,10 +4,11 @@ on:
   push:
     branches:
       - main
-      - feat/pytorch-catdog-setup
+    #   - feat/pytorch-catdog-setup
   pull_request:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   python_basic_test:
