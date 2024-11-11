@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
+    if: github.ref_name == 'main' || github.ref_name == 'feat/pytorch-catdog-setup'
 
     steps:
       - name: Checkout repository
