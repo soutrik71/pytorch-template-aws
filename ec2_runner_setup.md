@@ -49,6 +49,7 @@ tar xzf ./actions-runner-linux-x64-2.320.0.tar.gz
 ./config.sh --url https://github.com/soutrik71/pytorch-template-aws --token <Latest>
 # cd actions-runner/
 ./run.sh
+./config.sh remove --token <> # To remove the runner
 # https://github.com/soutrik71/pytorch-template-aws/settings/actions/runners/new?arch=x64&os=linux
 ```
 __Activate aws cli__:
