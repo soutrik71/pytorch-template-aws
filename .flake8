@@ -1,0 +1,27 @@
+[flake8]
+max-line-length = 120
+
+# Exclude the virtual environment, notebooks folder, tests folder, and other unnecessary directories
+exclude = 
+    .venv,
+    __pycache__,
+    .git,
+    build,
+    dist,
+    notebooks,
+    tests,
+    .ipynb_checkpoints,
+    .mypy_cache,
+    .pytest_cache,
+    pytorch_project
+
+ignore = 
+    E203,  
+    W503,  
+    E501,
+    E402,
+    F401,
+    E401
+
+max-complexity = 10
+show-source = True

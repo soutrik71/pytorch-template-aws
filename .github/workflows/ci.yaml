@@ -1,0 +1,208 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - feat/pytorch-catdogs-setup
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  python_basic_test:
+    name: Test current codebase and setup Python environment
+    runs-on: self-hosted
+
+    strategy:
+      matrix:
+        python-version: [3.10.15]
+
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      # Step 0: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # Step 1: Print the branch name
+      - name: Print branch name
+        run: echo "Branch name is ${{ github.ref_name }}"
+
+      # Step 2: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 3: Set up Python environment with the specified version
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 4: Install Poetry and set virtualenv to be created inside the project directory
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.in-project true  # Ensure the virtual environment is created in the project directory
+
+      # Step 5: Cache Poetry dependencies
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv  # Cache the virtual environment in the project directory
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      # Step 6: Install dependencies with Poetry
+      - name: Install dependencies
+        run: |
+          poetry install --no-root
+
+      # Step 7: Check Poetry environment
+      - name: Check Poetry environment
+        run: |
+          source .venv/bin/activate 
+          poetry env info
+
+      # Step 8: Set environment variables from GitHub Secrets and write to .env
+      - name: Create .env file
+        run: |
+            echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> .env
+            echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> .env
+            echo "AWS_REGION=${AWS_REGION}" >> .env
+            echo ".env file created"
+
+      # Step 9: Run lint checks at the root level
+      - name: Run lint checks
+        run: |
+          source .venv/bin/activate
+          flake8 . --exclude=.venv,tests,notebooks
+          
+      # Step 10: Run black code formatter at the root level
+      - name: black
+        run: |
+          source .venv/bin/activate
+          black . --exclude=.venv,tests,notebooks
+        
+    
+  pytorch_code_test:
+    name: Test PyTorch code
+    runs-on: self-hosted
+
+    env:
+        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        AWS_REGION: ${{ secrets.AWS_REGION }}
+
+
+    needs: python_basic_test  # This ensures pytorch_code_test runs only after python_basic_test completes successfully
+
+    strategy:
+      matrix:
+        python-version: [3.10.15]
+
+    steps:
+      # Step 0: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+            aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+            aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+            aws-region: ${{ secrets.AWS_REGION }}
+    
+      # Step 1: Checkout the repository code
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Set up Python environment with the specified version
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Step 3: Install Poetry and set virtualenv to be created inside the project directory
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.in-project true  # Ensure the virtual environment is created in the project directory
+
+      # Step 4: Cache Poetry dependencies
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv  # Cache the virtual environment in the project directory
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      # Step 5: Install dependencies with Poetry
+      - name: Install dependencies
+        run: |
+          poetry install --no-root
+
+      # Step 6: Check Poetry environment
+      - name: Check Poetry environment
+        run: |
+          source .venv/bin/activate 
+          poetry env info
+
+      # Step 7: DVD Pull to get data
+      - name: Get data from DVC
+        run: |
+          source .venv/bin/activate 
+          echo "Getting data from DVC"
+          dvc pull || echo "No data to pull from DVC"
+
+      # Step 8: Run Train code
+      - name: Run Train code
+        run: |
+          source .venv/bin/activate 
+          echo "Training the model"
+          python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False
+          python -m src.create_artifacts
+
+      # Step 9: Run the model testing code
+      - name: Run Test code
+        run: |
+          source .venv/bin/activate 
+          echo "Testing the model"
+          python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True
+        
+      # Step 10: Upload the model checkpoints, logs, and configs as artifacts
+      - name: upload model checkpoints
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-checkpoints
+          path: ./checkpoints/
+
+      - name: upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: ./logs/
+
+      - name: upload configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: configs
+          path: ./configs/
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: ./artifacts/
