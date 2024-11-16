@@ -109,8 +109,19 @@ if __name__ == "__main__":
 
     api = ImageClassifierAPI()
 
+    # basic server setup
+    # server = lit.LitServer(api, accelerator="auto",devices='auto')
     # Configure server with optimal settings
+    # server = lit.LitServer(
+    #     api, accelerator="auto", max_batch_size=16, batch_timeout=0.01, devices="auto"
+    # )
+    # increase the number of workers to handle more requests
     server = lit.LitServer(
-        api, accelerator="auto", max_batch_size=16, batch_timeout=0.01
+        api,
+        accelerator="auto",
+        max_batch_size=4,
+        batch_timeout=0.01,
+        devices="auto",
+        workers_per_device=2,
     )
     server.run(port=8080)
