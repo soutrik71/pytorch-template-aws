@@ -29,6 +29,10 @@ RUN --mount=type=cache,target=/tmp/poetry_cache poetry install --only main --no-
 # Stage 2: Runtime environment
 FROM python:3.10.15-slim as runner
 
+# Install curl for health check script
+RUN apt-get update && apt-get install -y --no-install-recommends curl && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
 # Copy application source code and necessary files
 COPY src /app/src
 COPY configs /app/configs
@@ -37,6 +41,9 @@ COPY main.py /app/main.py
 
 # Copy virtual environment from the builder stage
 COPY --from=builder /app/.venv /app/.venv
+
+# Copy the client files
+COPY run_client.sh /app/run_client.sh
 
 # Set the working directory to /app
 WORKDIR /app

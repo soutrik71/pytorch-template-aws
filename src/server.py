@@ -82,7 +82,7 @@ class ImageClassifierAPI(lit.LitAPI):
 
     def decode_request(self, request):
         """Handle both single and batch inputs."""
-        logger.info(f"decode_request received: {request}")
+        # logger.info(f"decode_request received: {request}")
         if not isinstance(request, dict) or "image" not in request:
             logger.error(
                 "Invalid request format. Expected a dictionary with key 'image'."
@@ -94,7 +94,7 @@ class ImageClassifierAPI(lit.LitAPI):
 
     def batch(self, inputs):
         """Batch process images."""
-        logger.info(f"batch received inputs: {inputs}")
+        # logger.info(f"batch received inputs: {inputs}")
         if not isinstance(inputs, list):
             raise ValueError("Input to batch must be a list.")
 

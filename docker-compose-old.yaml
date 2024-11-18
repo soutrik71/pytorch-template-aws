@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   train:
     build:
@@ -19,7 +21,7 @@ services:
       - default
     env_file:
       - .env
-
+    
   eval:
     build:
       context: .
@@ -38,13 +40,14 @@ services:
       - default
     env_file:
       - .env
-  
+    depends_on:
+      - train
 
-  server:
+  inference:
     build:
       context: .
     command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.server'
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment'
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -53,36 +56,14 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - PYTHONPATH=/app
-      - SERVER_URL=http://localhost:8080
     shm_size: '4g'
     networks:
       - default
     env_file:
-      - .env
-    ports:
-      - "8080:8080"
-      
-  client:
-    build:
-      context: .
-    command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && ./run_client.sh'
-    volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - SERVER_URL=http://server:8080
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
+      - .env  
+    depends_on:
+      - train
 
-  
 volumes:
   data:
   checkpoints:

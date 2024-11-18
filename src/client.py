@@ -1,3 +1,4 @@
+from loguru import logger
 import requests
 from urllib.request import urlopen
 import base64
@@ -8,45 +9,52 @@ def fetch_image(url):
     """
     Fetch image data from a URL.
     """
-    return urlopen(url).read()
+    try:
+        return urlopen(url).read()
+    except Exception as e:
+        logger.error(f"Failed to fetch image from {url}: {e}")
+        raise
 
 
 def encode_image_to_base64(img_data):
     """
     Encode image bytes to a base64 string.
     """
-    return base64.b64encode(img_data).decode("utf-8")
+    try:
+        return base64.b64encode(img_data).decode("utf-8")
+    except Exception as e:
+        logger.error(f"Failed to encode image to base64: {e}")
+        raise
 
 
-def send_prediction_request(base64_image, server_url):
+def send_prediction_request(base64_image, server_urls):
     """
     Send a single base64 image to the prediction API and retrieve predictions.
+    Tries multiple server URLs in order.
     """
-    try:
-        response = requests.post(f"{server_url}/predict", json={"image": base64_image})
-        return response
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to the server: {e}")
-        return None
-
-
-def send_batch_prediction_request(base64_images, server_url):
-    """
-    Send a batch of base64 images to the prediction API and retrieve predictions.
-    """
-    try:
-        response = requests.post(
-            f"{server_url}/predict", json=[{"image": img} for img in base64_images]
-        )
-        return response
-    except requests.exceptions.RequestException as e:
-        print(f"Error connecting to the server: {e}")
-        return None
+    for server_url in server_urls:
+        try:
+            logger.info(f"Attempting to send prediction request to {server_url}...")
+            response = requests.post(
+                f"{server_url}/predict", json={"image": base64_image}
+            )
+            if response.status_code == 200:
+                logger.info(f"Successfully connected to {server_url}")
+                return response
+            else:
+                logger.warning(
+                    f"Server at {server_url} returned status code {response.status_code}"
+                )
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error connecting to the server at {server_url}: {e}")
+    logger.error("Failed to connect to any server.")
+    return None
 
 
 def main():
-    # Server URL (default or from environment)
-    server_url = os.getenv("SERVER_URL", "http://localhost:8080")
+    # Server URLs to try
+    server_url_env = os.getenv("SERVER_URL", "http://localhost:8080")
+    server_urls = [server_url_env]
 
     # Example URLs for testing
     image_urls = [
@@ -55,30 +63,32 @@ def main():
 
     # Fetch and encode images
     try:
-        print("Fetching and encoding images...")
+        logger.info("Fetching and encoding images...")
         base64_images = [encode_image_to_base64(fetch_image(url)) for url in image_urls]
-        print("Images fetched and encoded successfully.")
+        logger.info("Images fetched and encoded successfully.")
     except Exception as e:
-        print(f"Error fetching or encoding images: {e}")
+        logger.error(f"Error fetching or encoding images: {e}")
         return
 
     # Test single image prediction
     try:
-        print("\n--- Single Image Prediction ---")
-        single_response = send_prediction_request(base64_images[0], server_url)
+        logger.info("--- Single Image Prediction ---")
+        single_response = send_prediction_request(base64_images[0], server_urls)
         if single_response and single_response.status_code == 200:
             predictions = single_response.json().get("predictions", [])
             if predictions:
-                print("Top 5 Predictions:")
+                logger.info("Top Predictions:")
                 for pred in predictions:
-                    print(f"{pred['label']}: {pred['probability']:.2%}")
+                    logger.info(f"{pred['label']}: {pred['probability']:.2%}")
             else:
-                print("No predictions returned.")
+                logger.warning("No predictions returned.")
         elif single_response:
-            print(f"Error: {single_response.status_code}")
-            print(single_response.text)
+            logger.error(f"Error: {single_response.status_code}")
+            logger.error(single_response.text)
+        else:
+            logger.error("Failed to get a response from any server.")
     except Exception as e:
-        print(f"Error sending single prediction request: {e}")
+        logger.error(f"Error sending single prediction request: {e}")
 
 
 if __name__ == "__main__":
