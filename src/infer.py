@@ -82,7 +82,7 @@ def download_image(cfg: DictConfig):
         logger.error(f"Failed to download image. Status code: {response.status_code}")
 
 
-@hydra.main(config_path="../configs", config_name="infer", version_base="1.1")
+@hydra.main(config_path="../configs", config_name="infer", version_base="1.3")
 def main_infer(cfg: DictConfig):
     # Print the configuration
     logger.info(OmegaConf.to_yaml(cfg))

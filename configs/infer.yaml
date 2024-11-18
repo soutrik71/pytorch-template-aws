@@ -40,3 +40,13 @@ seed: 42
 
 # name of the experiment
 name: "catdog_experiment"
+
+server:
+  port: 8080
+  max_batch_size: 8
+  batch_timeout: 0.01
+  accelerator: "auto"
+  devices: "auto"
+  workers_per_device: 2
+
+labels: ["cat", "dog"]
