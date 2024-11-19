@@ -16,6 +16,7 @@ poetry source add --priority explicit pytorch_cpu https://download.pytorch.org/w
 poetry add --source pytorch_cpu torch torchvision
 poetry lock
 poetry show
+poetry install --no-root
 
 # Add dependencies to the project 
 poetry add matplotlib
@@ -393,4 +394,26 @@ dvc repro
 python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False
 python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True
 python -m src.infer experiment=catdog_experiment
+```
+
+15. ## __GPU Setup__
+```bash
+docker build -t my-gpu-app .
+docker run --gpus all my-gpu-app
+docker exec -it <container_id> /bin/bash
+# pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime supports cuda 12.1 and python 3.10.14
+```
+```bash
+# for docker compose what we need to is follow similar to the following
+services:
+  test:
+    image: nvidia/cuda:12.3.1-base-ubuntu20.04
+    command: nvidia-smi
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 ```
