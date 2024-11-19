@@ -22,8 +22,9 @@ timm = "1.0.9"
 pandas = "^2.2.3"
 numpy = "^1.26.0"
 ruff = "^0.1.0"
-torch = {version = "^2.4.1+cpu", source = "pytorch_cpu"}
-torchvision = {version = "^0.19.1+cpu", source = "pytorch_cpu"}
+torch = {version = "^2.4.1", source = "pytorch_cuda"}
+torchvision = {version = "^0.19.1", source = "pytorch_cuda"}
+torchaudio = {version = "^2.4.1", source = "pytorch_cuda"}
 seaborn = "^0.13.2"
 pydantic = "^2.9.2"
 kaggle = "^1.6.17"
@@ -78,8 +79,8 @@ nvitop = "^1.3.2"
 pytest-asyncio = "^0.20.3"
 
 [[tool.poetry.source]]
-name = "pytorch_cpu"
-url = "https://download.pytorch.org/whl/cpu"
+name = "pytorch_cuda"
+url = "https://download.pytorch.org/whl/cu124"
 priority = "explicit"
 
 [build-system]
