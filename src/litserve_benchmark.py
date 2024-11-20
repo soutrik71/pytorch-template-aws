@@ -6,6 +6,11 @@ import requests
 import psutil
 from urllib.request import urlopen
 import matplotlib.pyplot as plt
+from loguru import logger
+import os
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv())
 
 # Try importing `gpustat` for GPU monitoring
 try:
@@ -16,7 +21,7 @@ except ImportError:
     GPU_AVAILABLE = False
 
 # Constants
-SERVER_URL = "http://localhost:8080"  # Base server URL
+SERVER_URL = os.getenv("SERVER_URL", "http://localhost:8080")
 TEST_IMAGE_URL = "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/beignets-task-guide.png"
 
 
@@ -28,7 +33,7 @@ def fetch_and_prepare_payload():
         img_data = urlopen(TEST_IMAGE_URL).read()
         return base64.b64encode(img_data).decode("utf-8")
     except Exception as e:
-        print(f"Error fetching the image: {e}")
+        logger.info(f"Error fetching the image: {e}")
         return None
 
 
@@ -47,7 +52,7 @@ def send_request(payload, batch=False):
         predictions = response.json() if response.status_code == 200 else None
         return response_time, response.status_code, predictions
     except Exception as e:
-        print(f"Error sending request: {e}")
+        logger.info(f"Error sending request: {e}")
         return None, None, None
 
 
@@ -73,7 +78,7 @@ def benchmark_api(num_requests=100, concurrency_level=10, batch=False):
     """
     payload = fetch_and_prepare_payload()
     if not payload:
-        print("Error preparing payload. Benchmark aborted.")
+        logger.info("Error preparing payload. Benchmark aborted.")
         return
 
     payloads = [payload] * num_requests if batch else [payload]
@@ -114,11 +119,11 @@ def benchmark_api(num_requests=100, concurrency_level=10, batch=False):
     avg_response_time = np.mean(response_times) * 1000 if response_times else 0  # ms
     requests_per_second = num_requests / total_benchmark_time
 
-    print("\n--- Sample Predictions ---")
+    logger.info("\n--- Sample Predictions ---")
     for i, prediction in enumerate(
         predictions[:5]
     ):  # Show predictions for the first 5 requests
-        print(f"Request {i + 1}: {prediction}")
+        logger.info(f"Request {i + 1}: {prediction}")
 
     return {
         "total_requests": num_requests,
@@ -134,66 +139,56 @@ def benchmark_api(num_requests=100, concurrency_level=10, batch=False):
 
 def run_benchmarks():
     """
-    Run comprehensive benchmarks and create plots.
+    Run comprehensive benchmarks and create separate plots for CPU and GPU usage.
     """
     concurrency_levels = [1, 8, 16, 32]
     metrics = []
 
-    print("Running API benchmarks...")
+    logger.info("Running API benchmarks...")
     for concurrency in concurrency_levels:
-        print(f"\nTesting concurrency level: {concurrency}")
+        logger.info(f"\nTesting concurrency level: {concurrency}")
         result = benchmark_api(
             num_requests=50, concurrency_level=concurrency, batch=False
         )
         if result:
             metrics.append(result)
-            print(
+            logger.info(
                 f"Concurrency {concurrency}: "
                 f"{result['requests_per_second']:.2f} reqs/sec, "
                 f"CPU: {result['avg_cpu_usage']:.1f}%, "
                 f"GPU: {result['avg_gpu_usage']:.1f}%"
             )
 
-    # Generate plots
-    plt.figure(figsize=(12, 6))
-
-    # Throughput
-    plt.subplot(1, 2, 1)
-    plt.plot(
-        concurrency_levels,
-        [m["requests_per_second"] for m in metrics],
-        "r-o",
-        label="Throughput",
-    )
-    plt.xlabel("Concurrency Level")
-    plt.ylabel("Requests per Second")
-    plt.title("API Throughput")
-    plt.grid(True)
-
-    # Resource Usage
-    plt.subplot(1, 2, 2)
+    # Generate CPU Usage Plot
+    plt.figure(figsize=(10, 5))
     plt.plot(
         concurrency_levels,
         [m["avg_cpu_usage"] for m in metrics],
         "b-o",
         label="CPU Usage",
     )
+    plt.xlabel("Concurrency Level")
+    plt.ylabel("CPU Usage (%)")
+    plt.title("CPU Usage vs. Concurrency Level")
+    plt.grid(True)
+    plt.savefig("artifacts/cpu_usage.png")
+    logger.info("CPU usage plot saved as 'cpu_usage.png'.")
+
+    # Generate GPU Usage Plot
     if GPU_AVAILABLE:
+        plt.figure(figsize=(10, 5))
         plt.plot(
             concurrency_levels,
             [m["avg_gpu_usage"] for m in metrics],
             "g-o",
             label="GPU Usage",
         )
-    plt.xlabel("Concurrency Level")
-    plt.ylabel("Resource Usage (%)")
-    plt.title("Resource Usage")
-    plt.legend()
-    plt.grid(True)
-
-    plt.tight_layout()
-    plt.savefig("benchmark_results.png")
-    print("Benchmark results saved as 'benchmark_results.png'.")
+        plt.xlabel("Concurrency Level")
+        plt.ylabel("GPU Usage (%)")
+        plt.title("GPU Usage vs. Concurrency Level")
+        plt.grid(True)
+        plt.savefig("artifacts/gpu_usage.png")
+        logger.info("GPU usage plot saved as 'gpu_usage.png'.")
 
 
 if __name__ == "__main__":

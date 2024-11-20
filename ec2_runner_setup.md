@@ -335,4 +335,23 @@ If successful, it should show details of the T4 GPU.
 - **PyTorch**: Installed with CUDA 12.2 support
 
 This setup ensures your system is ready for deep learning workloads with the T4 GPU.
+
+Install conda and create a new environment for the project
+Install pytorch and torchvision in the new environment
+Install other dependencies like numpy, pandas, matplotlib, etc.
+Run the project code in the new environment
+>>> import torch
+>>> print(torch.cuda.is_available())
+>>> print(torch.cuda.get_device_name(0))
+>>> print(torch.version.cuda)
+```
+__CUDA Docker Setup__:
+```bash
+# If you are using docker and want to run a container with CUDA support
+sudo apt install -y nvidia-container-toolkit
+nvidia-ctk --version
+sudo systemctl restart docker
+sudo systemctl status docker
+docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu20.04 nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.2.0-base-ubuntu20.04 nvcc --version
 ```
