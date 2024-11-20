@@ -87,7 +87,8 @@ services:
     build:
       context: .
     command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && ./run_client.sh'
+      sh -c 'until curl -s http://server:8080/health; do echo "Waiting for server to be ready..."; sleep 5; done && \
+      ./run_client.sh'
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints

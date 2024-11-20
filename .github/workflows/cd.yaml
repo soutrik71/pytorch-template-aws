@@ -36,7 +36,13 @@ jobs:
 
       - name: Run Docker Compose for train service
         run: |
-          docker-compose up -d --build train
+          docker-compose stop
+          docker-compose build 
+          docker-compose up -d train
+          docker-compose up -d eval
+          docker-compose up -d server
+          docker-compose up -d client
+          docker-compose remove
 
       - name: Build, tag, and push Docker image to Amazon ECR
         env:
