@@ -6,7 +6,7 @@
 defaults:
   - override /paths: catdog
   - override /data: catdog
-  - override /model: catdog_classifier_convnext
+  - override /model: catdog_classifier_resnet
   - override /callbacks: default
   - override /logger: default
   - override /trainer: default
@@ -15,7 +15,7 @@ defaults:
 # this allows you to overwrite only specified parameters
 
 seed: 42
-name: "catdog_experiment_convnext"
+name: "catdog_experiment_resnet"
 
 # Logger-specific configurations
 logger:
@@ -33,7 +33,7 @@ data:
   image_size: 160
 
 model:
-  base_model: convnext_tiny.fb_in22k_ft_in1k
+  base_model: efficientnet_b0
   pretrained: True
   lr: 1e-3
   weight_decay: 1e-5
@@ -41,11 +41,10 @@ model:
   patience: 5
   min_lr: 1e-6
   num_classes: 2
-  kernel_sizes: 7
 
 trainer:
   min_epochs: 1
-  max_epochs: 3
+  max_epochs: 5
 
 callbacks:
   model_checkpoint:

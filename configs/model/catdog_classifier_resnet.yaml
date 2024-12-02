@@ -1,15 +1,12 @@
-
-_target_: src.models.catdog_classifier_convnext.ConvNextClassifier
+_target_: src.models.catdog_model_resnet.ResnetClassifier
 
 # model params
-base_model: convnext_tiny.in12k_ft_in1k
+base_model: efficientnet_b0
 pretrained: True
 num_classes: 2
-kernel_sizes: 7
 # optimizer params
 lr: 1e-3
 weight_decay: 1e-5
-
 # scheduler params
 factor: 0.1
 patience: 10

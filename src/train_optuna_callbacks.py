@@ -19,6 +19,7 @@ from lightning.pytorch.callbacks import Callback
 import optuna
 from lightning.pytorch import Trainer
 import json
+from src.utils.aws_s3_services import S3Handler
 
 # Load environment variables
 load_dotenv(find_dotenv(".env"))
@@ -131,10 +132,10 @@ def objective(trial: optuna.trial.Trial, cfg: DictConfig, callbacks: List[Callba
     """Objective function for Optuna hyperparameter tuning."""
 
     # Sample hyperparameters for the model
-    cfg.model.embed_dim = trial.suggest_categorical("embed_dim", [64, 128, 256])
-    cfg.model.depth = trial.suggest_int("depth", 2, 6)
+    # cfg.model.embed_dim = trial.suggest_categorical("embed_dim", [64, 128, 256])
+    # cfg.model.depth = trial.suggest_int("depth", 2, 6)
     cfg.model.lr = trial.suggest_loguniform("lr", 1e-5, 1e-3)
-    cfg.model.mlp_ratio = trial.suggest_float("mlp_ratio", 1.0, 4.0)
+    # cfg.model.mlp_ratio = trial.suggest_float("mlp_ratio", 1.0, 4.0)
 
     # Initialize data module and model
     data_module: L.LightningDataModule = hydra.utils.instantiate(cfg.data)
@@ -206,6 +207,13 @@ def setup_trainer(cfg: DictConfig):
         # train_done.flag file to indicate training completion in checkpoints directory
         with open(Path(cfg.paths.ckpt_dir) / "train_done.flag", "w") as f:
             f.write("Training completed successfully!")
+
+        # upload the checkpoints to S3
+        s3_handler = S3Handler(bucket_name="deep-bucket-s3")
+        s3_handler.upload_folder(
+            "checkpoints",
+            "checkpoints",
+        )
 
     # Testing phase with best hyperparameters
     if cfg.get("test", False):

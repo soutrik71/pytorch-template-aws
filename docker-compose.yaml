@@ -3,7 +3,7 @@ services:
     build:
       context: .
     command: |
-      python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False && \
+      python -m src.train_optuna_callbacks experiment=catdog_experiment_resnet ++task_name=train ++train=True ++test=False && \
       python -m src.create_artifacts && \
       touch ./checkpoints/train_done.flag
     volumes:
@@ -31,7 +31,33 @@ services:
     build:
       context: .
     command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True'
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train_optuna_callbacks experiment=catdog_experiment_resnet ++task_name=test ++train=False ++test=True'
+    volumes:
+      - ./data:/app/data
+      - ./checkpoints:/app/checkpoints
+      - ./artifacts:/app/artifacts
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONPATH=/app
+    shm_size: '4g'
+    networks:
+      - default
+    env_file:
+      - .env
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  inference:
+    build:
+      context: .
+    command: |
+      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment_resnet'
     volumes:
       - ./data:/app/data
       - ./checkpoints:/app/checkpoints
@@ -54,65 +80,6 @@ services:
               capabilities: [gpu]
   
 
-  server:
-    build:
-      context: .
-    command: |
-      sh -c 'while [ ! -f /app/checkpoints/train_done.flag ]; do sleep 10; done && python -m src.server'
-    volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - SERVER_URL=http://localhost:8080
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-      
-  client:
-    build:
-      context: .
-    command: |
-      sh -c 'until curl -s http://server:8080/health; do echo "Waiting for server to be ready..."; sleep 5; done && \
-      ./run_client.sh'
-    volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-      - SERVER_URL=http://server:8080
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
-
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities: [gpu]
-
-  
 volumes:
   data:
   checkpoints:

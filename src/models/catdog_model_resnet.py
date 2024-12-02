@@ -9,6 +9,8 @@ import torch
 class ResnetClassifier(L.LightningModule):
     def __init__(
         self,
+        base_model: str = "efficientnet_b0",
+        pretrained: bool = True,
         num_classes: int = 2,  # Binary classification with two classes
         lr: float = 1e-3,
         weight_decay: float = 1e-5,
@@ -21,7 +23,7 @@ class ResnetClassifier(L.LightningModule):
 
         # Vision Transformer model initialization
         self.model = timm.create_model(
-            "efficientnet_b0", pretrained=True, num_classes=num_classes
+            base_model, pretrained=pretrained, num_classes=num_classes
         )
 
         # Define accuracy and F1 metrics for binary classification
@@ -90,5 +92,5 @@ class ResnetClassifier(L.LightningModule):
 
 
 if __name__ == "__main__":
-    model = ViTTinyClassifier()
+    model = ResnetClassifier()
     print(model)

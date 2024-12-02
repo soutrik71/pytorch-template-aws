@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import matplotlib.pyplot as plt
 from PIL import Image
 from torchvision import transforms
-from src.models.catdog_model import ViTTinyClassifier
+from src.models.catdog_model_resnet import ResnetClassifier
 from src.utils.logging_utils import setup_logger, task_wrapper, get_rich_progress
 import hydra
 from omegaconf import DictConfig, OmegaConf
@@ -13,6 +13,7 @@ from dotenv import load_dotenv, find_dotenv
 import rootutils
 import time
 from loguru import logger
+from src.utils.aws_s3_services import S3Handler
 
 # Load environment variables
 load_dotenv(find_dotenv(".env"))
@@ -93,9 +94,15 @@ def main_infer(cfg: DictConfig):
     if flag_file.exists():
         flag_file.unlink()
 
+    # download the model from S3
+    s3_handler = S3Handler(bucket_name="deep-bucket-s3")
+    s3_handler.download_folder(
+        "checkpoints",
+        "checkpoints",
+    )
     # Load the trained model
-    model = ViTTinyClassifier.load_from_checkpoint(checkpoint_path=cfg.ckpt_path)
-    classes = ["dog", "cat"]
+    model = ResnetClassifier.load_from_checkpoint(checkpoint_path=cfg.ckpt_path)
+    classes = cfg.labels
 
     # Download an image for inference
     download_image(cfg)
