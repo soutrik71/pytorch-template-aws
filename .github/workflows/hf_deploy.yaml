@@ -20,20 +20,20 @@ jobs:
             sudo apt-get install git-lfs
             git lfs install
             git lfs pull
-            
+
       - name: Add remote
         run: |
           git remote add space https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           USER: soutrik
-          SPACE: gradio_demo
+          SPACE: gradio_demo_CatDogClassifier
 
       - name: Add README.md
         run: |
           cat <<EOF > README.md
           ---
-          title: My Gradio App
+          title: My Gradio App CatDog Classifier
           emoji: 🚀
           colorFrom: blue
           colorTo: green
