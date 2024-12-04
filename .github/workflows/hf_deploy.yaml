@@ -53,7 +53,7 @@ jobs:
         run: |
           git add README.md
           git commit -m "Add README.md"
-          git push --force https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE HEAD:feat/litserve_gpu_gradio
+          git push --force https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE main
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           USER: soutrik
