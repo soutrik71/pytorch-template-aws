@@ -1,0 +1,28 @@
+stages:
+  train:
+    cmd: docker-compose run --rm train
+    deps:
+      - docker-compose.yaml
+      - src/train_optuna_callbacks.py
+      - src/create_artifacts.py
+      - data
+    outs:
+      - checkpoints/best-checkpoint.ckpt
+      - checkpoints/train_done.flag
+  # eval:
+  #   cmd: docker-compose run --rm eval
+  #   deps:
+  #     - docker-compose.yaml
+  #     - src/train.py
+  #     - checkpoints/best-checkpoint.ckpt
+  #     - checkpoints/train_done.flag
+
+  # inference:
+  #   cmd: docker-compose run --rm inference
+  #   deps:
+  #     - docker-compose.yaml
+  #     - src/infer.py
+  #     - checkpoints/best-checkpoint.ckpt
+  #     - checkpoints/train_done.flag
+  #   outs:
+  #     - artifacts/image_prediction.png

@@ -1,0 +1,20 @@
+
+default_root_dir: ${paths.output_dir}
+min_epochs: 1
+max_epochs: 6
+
+accelerator: auto
+devices: auto
+
+# mixed precision for extra speed-up
+# precision: 16
+
+# set True to to ensure deterministic results makes training slower but gives more reproducibility than just setting seeds
+deterministic: True
+
+# Log every N steps in training and validation
+log_every_n_steps: 10
+fast_dev_run: False
+
+gradient_clip_val: 1.0
+gradient_clip_algorithm: 'norm'

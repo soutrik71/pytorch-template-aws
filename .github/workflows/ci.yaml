@@ -1,0 +1,171 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+    #   - feat/pytorch-catdog-setup
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  python_basic_test:
+    name: Test current codebase and setup Python environment
+    runs-on: self-hosted
+
+    strategy:
+      matrix:
+        python-version: [3.10.15]
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Print branch name
+        run: echo "Branch name is ${{ github.ref_name }}"
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.in-project true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install --no-root --no-interaction
+
+      - name: Check Poetry environment
+        run: poetry env info
+
+      - name: Create .env file
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}" >> .env
+          echo "AWS_REGION=${AWS_REGION}" >> .env
+          echo ".env file created"
+
+      - name: Run lint checks
+        run: poetry run flake8 . --exclude=.venv,tests,notebooks
+
+      - name: black
+        run: poetry run black . --exclude="(\.venv|tests|notebooks)"
+
+  pytorch_code_test:
+    name: Test PyTorch code
+    runs-on: self-hosted
+
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+
+    needs: python_basic_test
+
+    strategy:
+      matrix:
+        python-version: [3.10.15]
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+          poetry config virtualenvs.in-project true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            .venv
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
+
+      - name: Install dependencies
+        run: poetry install --no-root --no-interaction
+
+      - name: Check Poetry environment
+        run: poetry env info
+
+      - name: Get data from DVC
+        run: |
+          poetry run dvc pull || echo "No data to pull from DVC"
+
+      - name: Run Train code
+        run: |
+          echo "Training the model"
+          poetry run python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=train ++train=True ++test=False || exit 1
+          poetry run python -m src.create_artifacts
+
+      - name: Run Test code
+        run: |
+          echo "Testing the model"
+          poetry run python -m src.train_optuna_callbacks experiment=catdog_experiment ++task_name=test ++train=False ++test=True || exit 1
+
+      - name: upload model checkpoints
+        uses: actions/upload-artifact@v4
+        with:
+          name: model-checkpoints
+          path: ./checkpoints/
+
+      - name: upload logs
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: ./logs/
+
+      - name: upload configs
+        uses: actions/upload-artifact@v4
+        with:
+          name: configs
+          path: ./configs/
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: artifacts
+          path: ./artifacts/

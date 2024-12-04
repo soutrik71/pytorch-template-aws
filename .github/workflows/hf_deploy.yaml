@@ -1,0 +1,61 @@
+name: Sync to Hugging Face Hub
+
+on:
+  push:
+    branches:
+        - main
+        - feat/litserve_gpu_gradio
+jobs:
+  sync-to-hub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+        
+      - name: Install Git LFS
+        run: |
+            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+            sudo apt-get install git-lfs
+            git lfs install
+            git lfs pull
+
+      - name: Add remote
+        run: |
+          git remote add space https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          USER: soutrik
+          SPACE: gradio_demo_CatDogClassifier
+
+      - name: Add README.md
+        run: |
+          cat <<EOF > README.md
+          ---
+          title: My Gradio App CatDog Classifier
+          emoji: 🚀
+          colorFrom: blue
+          colorTo: green
+          sdk: gradio
+          sdk_version: "5.7.1"
+          app_file: app.py
+          pinned: false
+          ---
+          EOF
+
+      - name: Configure Git identity
+        run: |
+          git config user.name "soutrik"
+          git config user.email "soutrik.chowdhury@ab-inbev.com"
+
+      - name: Push to hub
+        run: |
+          git add README.md
+          git commit -m "Add README.md"
+          git push --force https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE main
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          USER: soutrik
+          SPACE: gradio_demo_CatDogClassifier
+
