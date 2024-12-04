@@ -51,14 +51,24 @@ class S3Handler:
             s3_folder (str): Source folder in S3.
             dest_folder (str): Local destination folder path.
         """
-        dest_folder = Path(dest_folder)
+        dest_folder = Path(dest_folder).resolve()
         paginator = self.s3.get_paginator("list_objects_v2")
 
         for page in paginator.paginate(Bucket=self.bucket_name, Prefix=s3_folder):
             for obj in page.get("Contents", []):
                 s3_path = obj["Key"]
-                local_path = dest_folder / Path(s3_path).relative_to(s3_folder)
+                # Skip folder itself if returned by S3
+                if s3_path.endswith("/"):
+                    continue
+
+                # Compute relative path and local destination
+                relative_path = Path(s3_path[len(s3_folder) :].lstrip("/"))
+                local_path = dest_folder / relative_path
+
+                # Create necessary local directories
                 local_path.parent.mkdir(parents=True, exist_ok=True)
+
+                # Download file
                 self.s3.download_file(self.bucket_name, s3_path, str(local_path))
                 print(f"Downloaded: {s3_path} to {local_path}")
 
@@ -71,8 +81,8 @@ if __name__ == "__main__":
     # Upload specific files
     s3_handler.upload_folder(
         "checkpoints",
-        "checkpoints_test",
+        "checkpoints",
     )
 
     # Download example
-    s3_handler.download_folder("checkpoints_test", "checkpoints")
+    s3_handler.download_folder("checkpoints", "checkpoints")
