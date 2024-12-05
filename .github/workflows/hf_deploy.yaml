@@ -6,6 +6,8 @@ on:
         - main
         - feat/litserve_gpu_gradio
 
+  workflow_dispatch:
+
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
