@@ -58,7 +58,7 @@ jobs:
 
       - name: Push to hub
         run: |
-          git add README.md .env
+          git add README.md
           git commit -m "Add README.md and .env"
           git push --force https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE main
         env:
