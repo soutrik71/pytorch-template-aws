@@ -3,7 +3,7 @@ name: Sync to Hugging Face Hub on push to main branch for gradio_demo_CatDogClas
 on:
   push:
     branches:
-        - main
+        - master
         - feat/litserve_gpu_gradio
 
   workflow_dispatch:
