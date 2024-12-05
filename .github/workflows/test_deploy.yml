@@ -3,7 +3,7 @@ name: Deploy to ECR and Run Docker Compose with AWS Actions for GitHub and Docke
 on:
   push:
     branches:
-      - main
+      - master
       - feat/framework-setup
 
 jobs:

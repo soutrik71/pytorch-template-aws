@@ -3,7 +3,7 @@ name: Deploy PyTorch Training to ECR with Docker Compose
 on:
   push:
     branches:
-      - main
+      - master
       - feat/pytorch-catdog-setup
 
 jobs:

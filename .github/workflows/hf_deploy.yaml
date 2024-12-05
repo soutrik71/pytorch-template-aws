@@ -1,10 +1,11 @@
-name: Sync to Hugging Face Hub
+name: Sync to Hugging Face Hub on push to main branch for gradio_demo_CatDogClassifier space
 
 on:
   push:
     branches:
         - main
         - feat/litserve_gpu_gradio
+
 jobs:
   sync-to-hub:
     runs-on: ubuntu-latest
@@ -16,10 +17,10 @@ jobs:
         
       - name: Install Git LFS
         run: |
-            curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
-            sudo apt-get install git-lfs
-            git lfs install
-            git lfs pull
+          curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | sudo bash
+          sudo apt-get install git-lfs
+          git lfs install
+          git lfs pull
 
       - name: Add remote
         run: |
@@ -28,6 +29,12 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           USER: soutrik
           SPACE: gradio_demo_CatDogClassifier
+
+      - name: Write .env file
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
 
       - name: Add README.md
         run: |
@@ -42,10 +49,6 @@ jobs:
           app_file: app.py
           pinned: false
           ---
-          environment:
-            AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-            AWS_REGION: ${{ secrets.AWS_REGION }}
           EOF
 
       - name: Configure Git identity
@@ -55,14 +58,10 @@ jobs:
 
       - name: Push to hub
         run: |
-          git add README.md
-          git commit -m "Add README.md"
+          git add README.md .env
+          git commit -m "Add README.md and .env"
           git push --force https://$USER:$HF_TOKEN@huggingface.co/spaces/$USER/$SPACE main
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.AWS_REGION }}
           USER: soutrik
           SPACE: gradio_demo_CatDogClassifier
-
