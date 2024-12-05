@@ -32,6 +32,17 @@ jobs:
           subnet-id: subnet-0665e4d868c759e3f
           security-group-id: sg-0596459527ead65c8
 
+      - name: Print EC2 runner details
+        run: |
+          echo "EC2 Instance ID: ${{ steps.start-ec2-runner.outputs.ec2-instance-id }}"
+          INSTANCE_ID=${{ steps.start-ec2-runner.outputs.ec2-instance-id }}
+          INSTANCE_NAME=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
+            --query "Reservations[].Instances[].Tags[?Key=='Name'].Value[]" --output text)
+          PUBLIC_DNS=$(aws ec2 describe-instances --instance-ids $INSTANCE_ID \
+            --query "Reservations[].Instances[].PublicDnsName" --output text)
+          echo "EC2 Instance Name: $INSTANCE_NAME"
+          echo "EC2 Public DNS: $PUBLIC_DNS"
+
   deploy:
     name: Deploy PyTorch Training Pipeline
     needs: start-runner
@@ -80,7 +91,7 @@ jobs:
       - name: Build, tag, and push Docker image to Amazon ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: soutrik71/mnist
+          REPOSITORY: soutrik71/catdog_classifier
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build -t $REGISTRY/$REPOSITORY:$IMAGE_TAG .
@@ -91,7 +102,7 @@ jobs:
       - name: Pull Docker image from ECR and verify
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          REPOSITORY: soutrik71/mnist
+          REPOSITORY: soutrik71/catdog_classifier
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker pull $REGISTRY/$REPOSITORY:$IMAGE_TAG
