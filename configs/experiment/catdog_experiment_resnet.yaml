@@ -28,12 +28,12 @@ logger:
 
 data:
   batch_size: 64
-  num_workers: 8
+  num_workers: 4
   pin_memory: True
   image_size: 160
 
 model:
-  base_model: efficientnet_b0
+  base_model: resnet18.tv_in1k
   pretrained: True
   lr: 1e-3
   weight_decay: 1e-5

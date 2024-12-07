@@ -84,9 +84,10 @@ jobs:
 
       - name: Run Docker Compose for all services
         run: |
-          docker-compose build --no-cache
-          docker-compose up -d train eval
-          docker-compose logs --follow train eval
+          docker-compose build
+          docker-compose up -d train
+          docker-compose up -d eval
+          docker-compose logs --follow
           docker-compose down --remove-orphans
 
       - name: Build, tag, and push Docker image to Amazon ECR
