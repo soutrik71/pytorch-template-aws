@@ -34,6 +34,10 @@ jobs:
           echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
           echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
 
+      - name: Get data from DVC
+        run: |
+          poetry run dvc pull || echo "No data to pull from DVC"
+
       - name: Run Docker Compose for train service
         run: |
           docker-compose stop

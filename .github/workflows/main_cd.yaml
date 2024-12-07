@@ -82,11 +82,16 @@ jobs:
           echo "::add-mask::${{ secrets.AWS_ACCESS_KEY_ID }}"
           echo "::add-mask::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
 
+      - name: Get data from DVC
+        run: |
+          poetry run dvc pull || echo "No data to pull from DVC"
+  
+
       - name: Run Docker Compose for all services
         run: |
-          docker-compose build
-          docker-compose up -d train
-          docker-compose up -d eval
+          docker-compose stop
+          docker-compose build 
+          docker-compose up -d
           docker-compose logs --follow
           docker-compose down --remove-orphans
 
