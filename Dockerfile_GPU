@@ -1,8 +1,8 @@
-# Stage 1: Base image with minimal runtime for PyTorch (CPU)
-FROM ubuntu:20.04 as base
+# Stage 1: Base image with CUDA 12.2, cuDNN 9, and minimal runtime for PyTorch
+FROM nvidia/cuda:12.2.0-runtime-ubuntu20.04 as base
 
 LABEL maintainer="Soutrik soutrik1991@gmail.com" \
-      description="Base Docker image for running a Python app with Poetry and CPU support."
+      description="Base Docker image for running a Python app with Poetry and GPU support."
 
 # Install necessary system dependencies, including Python 3.10
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -69,8 +69,8 @@ WORKDIR /app
 # Add virtual environment to PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Install PyTorch with CPU support
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# Install PyTorch with CUDA 12.2 support (adjusted for compatibility)
+RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu122
 
 # Default command to run the application
 CMD ["python", "-m", "main"]

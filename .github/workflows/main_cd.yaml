@@ -3,7 +3,8 @@ name: Deploy PyTorch Training with all advanced features like self-hosted EC2 ru
 on:
   push:
     branches:
-      - main
+      - feat/catdog_aws_cpu_deployment
+
   workflow_dispatch:
 
 jobs:
@@ -27,10 +28,10 @@ jobs:
         with:
           mode: start
           github-token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
-          ec2-image-id: ami-0deffac7fd1fd3c70
-          ec2-instance-type: g4dn.xlarge
-          subnet-id: subnet-0665e4d868c759e3f
-          security-group-id: sg-0596459527ead65c8
+          ec2-image-id: ami-044b0717aadbc9dfa
+          ec2-instance-type: t2.xlarge
+          subnet-id: subnet-024811dee81325f1c
+          security-group-id: sg-0646c2a337a355a31
 
       - name: Print EC2 runner details
         run: |
