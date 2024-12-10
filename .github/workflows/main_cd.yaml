@@ -69,6 +69,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-
 
+      - name: Create ECR Repository if it doesn't exist
+        run: |
+          aws ecr describe-repositories --repository-names soutrik71/catdog_classifier || \
+          aws ecr create-repository --repository-name soutrik71/catdog_classifier
+
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
