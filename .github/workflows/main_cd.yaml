@@ -87,6 +87,15 @@ jobs:
         run: |
           poetry run dvc pull && echo "Data successfully pulled from DVC" || echo "No data found in DVC"
 
+      - name: Create .env file
+        run: |
+          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
+          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
+          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
+          echo "::add-mask::${{ secrets.AWS_ACCESS_KEY_ID }}"
+          echo "::add-mask::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          echo "Environment file created successfully."
+
       - name: Run Docker Compose for all services
         run: |
           docker-compose stop
