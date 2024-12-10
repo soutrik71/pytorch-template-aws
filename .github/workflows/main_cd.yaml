@@ -72,9 +72,8 @@ jobs:
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          export PATH="$HOME/.local/bin:$PATH"
-          echo "::add-path::$HOME/.local/bin"
-          poetry --version
+          echo "Poetry installed successfully."
+          echo "PATH=/root/.local/bin:$PATH" >> $GITHUB_ENV
 
       - name: Verify Poetry Installation
         run: |
@@ -86,7 +85,7 @@ jobs:
 
       - name: Get data from DVC
         run: |
-          poetry run dvc pull || echo "No data to pull from DVC"
+          poetry run dvc pull && echo "Data successfully pulled from DVC" || echo "No data found in DVC"
 
       - name: Run Docker Compose for all services
         run: |
