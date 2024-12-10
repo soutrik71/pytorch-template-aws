@@ -69,24 +69,19 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker-
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
-
       - name: Install Poetry
         run: |
           curl -sSL https://install.python-poetry.org | python3 -
-          echo "export PATH=$HOME/.local/bin:$PATH" >> $HOME/.bashrc
-          echo "Poetry installed successfully."
+          export PATH="$HOME/.local/bin:$PATH"
+          echo "::add-path::$HOME/.local/bin"
+          poetry --version
 
       - name: Verify Poetry Installation
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
           poetry --version
 
       - name: Install dependencies from pyproject.toml
         run: |
-          export PATH="$HOME/.local/bin:$PATH"
           poetry install --no-root
 
       - name: Get data from DVC
