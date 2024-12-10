@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - feat/catdog_aws_cpu_deployment
-
   workflow_dispatch:
 
 jobs:
@@ -74,23 +73,24 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Create .env file
+      - name: Install Poetry
         run: |
-          echo "AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}" >> .env
-          echo "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}" >> .env
-          echo "AWS_REGION=${{ secrets.AWS_REGION }}" >> .env
-          echo "::add-mask::${{ secrets.AWS_ACCESS_KEY_ID }}"
-          echo "::add-mask::${{ secrets.AWS_SECRET_ACCESS_KEY }}"
+          curl -sSL https://install.python-poetry.org | python3 -
+          echo "Poetry installed successfully."
+
+      - name: Install dependencies from pyproject.toml
+        run: |
+          export PATH="$HOME/.local/bin:$PATH"
+          poetry install --no-root
 
       - name: Get data from DVC
         run: |
           poetry run dvc pull || echo "No data to pull from DVC"
-  
 
       - name: Run Docker Compose for all services
         run: |
           docker-compose stop
-          docker-compose build 
+          docker-compose build
           docker-compose up -d
           docker-compose logs --follow
           docker-compose down --remove-orphans
