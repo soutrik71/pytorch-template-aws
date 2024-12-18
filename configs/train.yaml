@@ -45,3 +45,5 @@ optimization_metric: "val_acc"
 
 # optuna hyperparameter optimization
 n_trials: 2
+
+labels: ["cat", "dog"]

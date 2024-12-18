@@ -15,7 +15,14 @@ def setup_logger(log_file):
         sys.stderr,
         format="<green>{time:YYYY-MM-DD HH:mm:ss}</green> | <level>{level: <8}</level> | <cyan>{name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{message}</level>",
     )
-    logger.add(log_file, rotation="1MB", retention="7 days", encoding="utf-8")
+    logger.add(
+        log_file,
+        rotation="1MB",
+        retention="7 days",
+        encoding="utf-8",
+        level="INFO",
+        enqueue=False,
+    )
 
 
 def task_wrapper(func):

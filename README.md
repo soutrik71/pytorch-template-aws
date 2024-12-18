@@ -1,1 +1,1 @@
-# pytorch-template-aws
+#### Serverless Deployment with AWS Lambda and API Gateway

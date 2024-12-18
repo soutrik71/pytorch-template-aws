@@ -9,9 +9,12 @@ from src.utils.aws_s3_services import S3Handler
 from src.utils.logging_utils import setup_logger
 from loguru import logger
 import rootutils
+import os
 
 # Load environment variables and configure logger
-setup_logger(Path("./logs") / "gradio_app.log")
+log_dir = "/tmp/logs"
+os.makedirs(log_dir, exist_ok=True)
+setup_logger(Path(log_dir) / "gradio_app.log")
 # Setup root directory
 root = rootutils.setup_root(__file__, indicator=".project-root")
 

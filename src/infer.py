@@ -87,6 +87,7 @@ def download_image(cfg: DictConfig):
 def main_infer(cfg: DictConfig):
     # Print the configuration
     logger.info(OmegaConf.to_yaml(cfg))
+    
     setup_logger(Path(cfg.paths.log_dir) / "infer.log")
 
     # Remove the train_done flag if it exists
