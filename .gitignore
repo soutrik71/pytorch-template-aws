@@ -30,3 +30,4 @@ artifacts/*
 *jpg
 *jpeg
 artifacts/image_prediction.png
+cdk.out/

@@ -109,9 +109,40 @@ class CatDogClassifier:
         return self.labels[predicted_idx], confidence
 
 
+# @app.on_event("startup")
+# async def startup_event():
+#     global classifier, cfg
+
+#     # Load Hydra Config
+#     with hydra.initialize(config_path="configs", version_base="1.3"):
+#         cfg = hydra.compose(config_name="infer")
+
+#     model_path = cfg.ckpt_path
+#     labels = cfg.labels
+#     image_size = cfg.data.image_size
+
+#     # Download model if not exists
+#     if not Path(model_path).exists():
+#         logger.info("Downloading model from S3...")
+#         s3_handler = S3Handler(bucket_name="deep-bucket-s3")
+#         s3_handler.download_folder("checkpoints", cfg.paths.ckpt_dir)
+
+#     logger.info("Initializing Cat/Dog Classifier...")
+#     classifier = CatDogClassifier(model_path, labels, image_size)
+
+
 @app.on_event("startup")
 async def startup_event():
     global classifier, cfg
+
+    # Set cache paths to writable /tmp directory
+    os.environ["HF_HOME"] = "/tmp/huggingface"  # HuggingFace Hub cache
+    os.environ["TORCH_HOME"] = "/tmp/torch"  # PyTorch cache
+    os.environ["MPLCONFIGDIR"] = "/tmp/matplotlib"  # Matplotlib cache
+
+    # Ensure writable directories exist
+    for cache_dir in ["/tmp/huggingface", "/tmp/torch", "/tmp/matplotlib"]:
+        Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
     # Load Hydra Config
     with hydra.initialize(config_path="configs", version_base="1.3"):

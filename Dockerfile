@@ -1,76 +1,39 @@
-# Stage 1: Base image with minimal runtime for PyTorch (CPU)
-FROM ubuntu:20.04 as base
+FROM public.ecr.aws/docker/library/python:3.12-slim
 
-LABEL maintainer="Soutrik soutrik1991@gmail.com" \
-      description="Base Docker image for running a Python app with Poetry and CPU support."
+# Copy the Lambda adapter
+COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.8.4 /lambda-adapter /opt/extensions/lambda-adapter
 
-# Install necessary system dependencies, including Python 3.10
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common && \
-    add-apt-repository ppa:deadsnakes/ppa && \
-    apt-get update && apt-get install -y --no-install-recommends \
-    python3.10 \
-    python3.10-venv \
-    python3.10-dev \
-    python3-pip \
-    curl \
-    git \
-    build-essential && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+# Set environment variables
+ENV PORT=8000
+ENV PYTHONUNBUFFERED=1
+ENV HF_HOME=/tmp/huggingface
+ENV TORCH_HOME=/tmp/torch
+ENV MPLCONFIGDIR=/tmp/matplotlib
+ENV TRANSFORMERS_CACHE=/tmp/huggingface/transformers
+ENV PYPI_MIRROR=https://pypi.org/simple
 
-# Set Python 3.10 as the default
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3.10 1 && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1 && \
-    python --version
-
-# Install Poetry
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
-
-# Configure Poetry environment
-ENV POETRY_NO_INTERACTION=1 \
-    POETRY_VIRTUALENVS_IN_PROJECT=1 \
-    POETRY_CACHE_DIR=/tmp/poetry_cache
-
-# Set the working directory to /app
+# Set working directory
 WORKDIR /app
 
-# Copy pyproject.toml and poetry.lock to install dependencies
-COPY pyproject.toml poetry.lock /app/
+# Copy requirements first to leverage Docker cache
+COPY requirements.txt ./requirements.txt
 
-# Install Python dependencies without building the app itself
-RUN --mount=type=cache,target=/tmp/poetry_cache poetry install --only main --no-root
+# Pre-download large packages (e.g., triton) and cache them
+RUN pip install --no-cache-dir --default-timeout=120 --retries=5 triton==3.0.0
 
-# Stage 2: Build stage for the application
-FROM base as builder
+# Install the remaining requirements
+RUN pip install --no-cache-dir -r requirements.txt --default-timeout=120 --retries=5
 
-# Copy application source code and necessary files
-COPY src /app/src
-COPY configs /app/configs
-COPY .project-root /app/.project-root
-COPY main.py /app/main.py
+# Copy only the necessary files
+COPY main.py ./main.py
+COPY src ./src
+COPY .env ./.env
+COPY checkpoints ./checkpoints
+COPY configs ./configs
+COPY .project-root ./.project-root
 
-# Stage 3: Final runtime stage
-FROM base as runner
+# Expose the port
+EXPOSE 8000
 
-# Copy application source code and dependencies from the builder stage
-COPY --from=builder /app/src /app/src
-COPY --from=builder /app/configs /app/configs
-COPY --from=builder /app/.project-root /app/.project-root
-COPY --from=builder /app/main.py /app/main.py
-COPY --from=builder /app/.venv /app/.venv
-
-# Copy client files
-COPY run_client.sh /app/run_client.sh
-
-# Set the working directory to /app
-WORKDIR /app
-
-# Add virtual environment to PATH
-ENV PATH="/app/.venv/bin:$PATH"
-
-# Install PyTorch with CPU support
-RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
-
-# Default command to run the application
-CMD ["python", "-m", "main"]
+# Default command to run the FastAPI app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
