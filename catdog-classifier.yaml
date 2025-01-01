@@ -1,0 +1,62 @@
+# Deployment for the catdog Classifier
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: catdog-classifer-deployment
+  labels:
+    app: catdog-classifer
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: catdog-classifer
+  template:
+    metadata:
+      labels:
+        app: catdog-classifer
+    spec:
+      containers:
+        - name: catdog-classifer
+          image: catdog-classifier:latest
+          imagePullPolicy: IfNotPresent # Changed for proper image pulling
+          ports:
+            - containerPort: 8000 # Aligned with Service targetPort
+
+---
+# Service for the catdog Classifier
+apiVersion: v1
+kind: Service
+metadata:
+  name: catdog-classifer-service
+spec:
+  selector:
+    app: catdog-classifer
+  ports:
+    - protocol: TCP
+      port: 80 # External service port
+      targetPort: 8000 # Matches the containerPort in Deployment
+  type: ClusterIP # Default type for internal access
+
+---
+# Ingress for the catdog Classifier with session affinity
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: catdog-classifer-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/affinity: cookie # Enables session affinity
+    nginx.ingress.kubernetes.io/session-cookie-name: catdog-session-cookie # Sets cookie name
+spec:
+  ingressClassName: nginx # Ensure NGINX ingress controller is installed
+  rules:
+    - host: catdog-classifer.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: catdog-classifer-service
+                port:
+                  number: 80 # Aligned with the Service port
