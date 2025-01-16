@@ -1,90 +1,58 @@
+version: "3.9"
+
 services:
-  train:
-    build:
-      context: .
-    command: |
-      python -m src.train_optuna_callbacks experiment=catdog_experiment_resnet ++task_name=train ++train=True ++test=False && \
-      python -m src.create_artifacts && \
-      touch ./checkpoints/train_done.flag
-    volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
+  redis:
+    image: redis:7.4.1
+    container_name: redis-server
+    command: ["redis-server", "--requirepass", "redispassword"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
     environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
-  eval:
-    build:
-      context: .
-    command: |
-      sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.train_optuna_callbacks experiment=catdog_experiment_resnet ++task_name=test ++train=False ++test=True'
+      REDIS_PASSWORD: redispassword
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redispassword", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
     volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
-
-  inference:
-    build:
-      context: .
-    command: |
-      sh -c 'while [ ! -f ./checkpoints/train_done.flag ]; do sleep 10; done && python -m src.infer experiment=catdog_experiment_resnet'
-    volumes:
-      - ./data:/app/data
-      - ./checkpoints:/app/checkpoints
-      - ./artifacts:/app/artifacts
-      - ./logs:/app/logs
-    environment:
-      - PYTHONUNBUFFERED=1
-      - PYTHONPATH=/app
-    shm_size: '4g'
-    networks:
-      - default
-    env_file:
-      - .env
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: 1
-    #           capabilities: [gpu]
+      - redis_data:/data
+    restart: always
   
+  model-server:
+    build:
+      context: .
+      dockerfile: model-server/Dockerfile
+    container_name: model-server
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redispassword}
+      - PROJECT_ROOT=/app
+    depends_on:
+      redis:
+        condition: service_healthy
+    restart: always
+
+  web-server:
+    build:
+      context: .
+      dockerfile: web-server/Dockerfile
+    container_name: web-server
+    ports:
+      - "9000:9000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-redispassword}
+      - MODEL_SERVER_URL=http://model-server:8000
+      - PROJECT_ROOT=/app
+    depends_on:
+      - "redis"
+      - "model-server"
+    restart: always
 
 volumes:
-  data:
-  checkpoints:
-  artifacts:
-  logs:
-
-networks:
-  default:
+  redis_data:
+    driver: local

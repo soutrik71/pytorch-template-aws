@@ -11,6 +11,7 @@ ENV TORCH_HOME=/tmp/torch
 ENV MPLCONFIGDIR=/tmp/matplotlib
 ENV TRANSFORMERS_CACHE=/tmp/huggingface/transformers
 ENV PYPI_MIRROR=https://pypi.org/simple
+ENV PROJECT_ROOT=/app
 
 # Set working directory
 WORKDIR /app
