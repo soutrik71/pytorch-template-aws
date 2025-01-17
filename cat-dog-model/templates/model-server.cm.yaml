@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: model-server-config # this name is referenced where configMap is used
+  namespace: {{ .Release.Namespace }}
+data:
+  model_server_url: "http://model-server-service:8000"
+  project_root: "/app"
