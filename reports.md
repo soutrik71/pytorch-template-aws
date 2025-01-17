@@ -143,19 +143,19 @@ kubectl top pod -n demo
 kubectl top node -n demo
 ```
 ##### Ngrok deployment
-![ngrok](image.png)
+![ngrok](./assets/image.png)
 
 ##### kubectl get all -o wide -n demo
-![kubectl get all -o wide -n demo](image-1.png)
+![kubectl get all -o wide -n demo](./assets/image-1.png)
 
 ##### kubectl describe <your_deployment> -n demo
-![deployment](image-2.png)
+![deployment](./assets/image-2.png)
 
 ##### kubectl describe <your_pod> -n demo
-![pods](image-3.png)
+![pods](./assets/image-3.png)
 
 ##### kubectl describe <your_ingress> -n demo
-![ingress](image-4.png)
+![ingress](./assets/image-4.png)
 
 ##### kubectl top pod & kubectl top node -n demo
-![](image-5.png)
+![](./assets/image-5.png)
