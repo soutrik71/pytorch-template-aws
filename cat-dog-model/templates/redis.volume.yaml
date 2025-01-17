@@ -1,29 +1,35 @@
 apiVersion: v1
-kind: PersistentVolume
+kind: PersistentVolume # Define a PersistentVolume
 metadata:
-  name: redis-pv
-  namespace: {{ .Release.Namespace }}
+    name: redis-pv-{{ .Values.namespace }}
+    labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: mnist-app
+        app.kubernetes.io/version: {{ .Values.configVersions.redis }}
 spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-storage
-  capacity:
-    storage: 2Gi
-  hostPath:
-    path: /data/redis-pv/
+    accessModes:
+        - ReadWriteOnce
+    storageClassName: local-storage
+    capacity:
+        storage: 2Gi
+    hostPath:
+        path: /data/redis-pv/{{ .Values.namespace }}/
 
 ---
 
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: PersistentVolumeClaim # Define a PersistentVolumeClaim
 metadata:
-  name: redis-pvc
-  namespace: {{ .Release.Namespace }}
+    name: redis-pvc
+    namespace: {{ .Values.namespace }}
+    labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: fastapi-app
 spec:
-  storageClassName: local-storage
-  accessModes:
-    - "ReadWriteOnce"
-  volumeName: redis-pv
-  resources:
-    requests:
-      storage: "1Gi" 
+    storageClassName: local-storage
+    accessModes:
+        - ReadWriteOnce
+    volumeName: redis-pv-{{ .Values.namespace }}
+    resources:
+        requests:
+            storage: 1Gi

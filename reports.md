@@ -100,3 +100,17 @@ Here I don't have any values specified in the values.yaml file, but we will add 
 ```bash
 # we create values.yaml file with namespace specific values and then deploy the helm chart
 # We also create namespace.yaml file to create the namespace specific to the deployment
+helm install cat-dog-release cat-dog-model -f cat-dog-model/values.yaml
+helm upgrade cat-dog-release cat-dog-model -f cat-dog-model/values.yaml
+helm list -a
+kubectl get all -n demo
+minikube service web-server-service -n demo
+minikube tunnel
+kubectl port-forward service/web-server-service 9000:9000 -n demo
+helm uninstall cat-dog-release
+```
+##### Service deployment
+![Deployment](./assets/catdog_deploy3.png)
+
+##### Tunnel deployment
+![Deployment](./assets/catdog_deploy4.png)

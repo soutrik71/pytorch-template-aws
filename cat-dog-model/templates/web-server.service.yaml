@@ -2,13 +2,18 @@ apiVersion: v1
 kind: Service
 metadata:
   name: web-server-service
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: web-server
+    app.kubernetes.io/part-of: mnist-app
+    app.kubernetes.io/version: {{ .Values.configVersions.webServer }}
 spec:
   selector:
-    app: web-server  # Matches the app label from the Deployment
+    app.kubernetes.io/name: web-server
   ports:
-  - port: 9000          # Port exposed by the Service
-    targetPort: 9000    # Port on the Pod that receives traffic
+    - name: http
+      port: 9000
+      targetPort: 9000
 
 ---
 
@@ -16,12 +21,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: web-server-ingress
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: web-server
+    app.kubernetes.io/part-of: mnist-app
+    app.kubernetes.io/version: {{ .Values.configVersions.webServer }}
   annotations:
     nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
-    - host: fastapi.localhost
+    - host: {{ .Values.ingress.hostname }}
       http:
         paths:
           - path: /

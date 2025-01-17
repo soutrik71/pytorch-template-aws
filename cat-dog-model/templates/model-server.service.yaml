@@ -2,11 +2,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: model-server-service
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/name: model-server
+    app.kubernetes.io/part-of: mnist-app
+    app.kubernetes.io/version: {{ .Values.configVersions.modelServer }}
 spec:
   selector:
-    app: model-server
+    app.kubernetes.io/name: model-server
   ports:
-  - port: 8000
-    targetPort: 8000
-  type: ClusterIP  # Internal cluster access
+    - name: http
+      port: 8000
+      targetPort: 8000

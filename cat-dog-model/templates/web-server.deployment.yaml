@@ -2,55 +2,59 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: web-server
-  namespace: {{ .Release.Namespace }}
+  namespace: {{ .Values.namespace }}
   labels:
-    app: web-server
+    app.kubernetes.io/name: web-server
+    app.kubernetes.io/part-of: mnist-app
+    app.kubernetes.io/version: {{ .Values.configVersions.webServer }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.webServer.replicas }}
   selector:
     matchLabels:
-      app: web-server
+      app.kubernetes.io/name: web-server
   template:
     metadata:
       labels:
-        app: web-server
+        app.kubernetes.io/name: web-server
     spec:
       containers:
       - name: web-server
-        image: web-server:latest
+        image: "{{ .Values.webServer.image.repository }}:{{ .Values.webServer.image.tag }}"
         imagePullPolicy: Never
         resources:
           requests:
-            memory: "100Mi"
-            cpu: "250m"
+            memory: {{ .Values.webServer.resources.requests.memory }}
+            cpu: {{ .Values.webServer.resources.requests.cpu }}
           limits:
-            memory: "200Mi"
-            cpu: "500m"
+            memory: {{ .Values.webServer.resources.limits.memory }}
+            cpu: {{ .Values.webServer.resources.limits.cpu }}
         ports:
-          - containerPort: 9000
+          - name: http
+            containerPort: 9000
         env:
           - name: REDIS_HOST
             valueFrom:
               configMapKeyRef:
-                name: redis-config
+                name: redis-config-{{ .Values.configVersions.redis }}
                 key: hostname
           - name: REDIS_PORT
             valueFrom:
               configMapKeyRef:
-                name: redis-config
+                name: redis-config-{{ .Values.configVersions.redis }}
                 key: port
           - name: MODEL_SERVER_URL
             valueFrom:
               configMapKeyRef:
-                name: model-server-config
+                name: model-server-config-{{ .Values.configVersions.modelServer }}
                 key: model_server_url
           - name: REDIS_PASSWORD
             valueFrom:
               secretKeyRef:
-                name: redis-secret
+                name: redis-secret-{{ .Values.configVersions.redis }}
                 key: db_password
           - name: PROJECT_ROOT
             valueFrom:
               configMapKeyRef:
-                name: model-server-config
+                name: model-server-config-{{ .Values.configVersions.modelServer }}
                 key: project_root
+          

@@ -1,0 +1,54 @@
+# Environment Settings
+namespace: demo  # Update this to reflect the new namespace
+environment: dev
+modelServerUrl: "http://model-server-service:8000"
+projectRoot: "/app"
+
+# Config Versions
+configVersions: 
+  modelServer: v1
+  redis: v1
+  webServer: v1
+
+# Web Server
+webServer:
+  image:
+    repository: web-server
+    tag: latest
+  resources:
+    requests:
+      memory: "100Mi"
+      cpu: "250m"
+    limits:
+      memory: "200Mi"
+      cpu: "500m"
+  replicas: 1
+
+# Model Server
+modelServer:
+  image:
+    repository: model-server
+    tag: latest
+  resources:
+    requests:
+      memory: "1Gi"
+      cpu: "500m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+  replicas: 1
+
+# Redis
+redis:
+  image:
+    repository: redis
+    tag: 7.4.1
+  resources:
+    memory: "200Mi"
+    cpu: "200m"
+  password: "aiwilltakeovertheworld"
+  replicas: 1
+
+# ingress
+ingress:
+  hostname: fastapi.localhost

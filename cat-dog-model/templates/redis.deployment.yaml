@@ -1,41 +1,49 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-    name: redis-db
-    namespace: {{ .Release.Namespace }}
+    name: redis-deployment
+    namespace: {{ .Values.namespace }}
+    labels:
+        app.kubernetes.io/name: redis
+        app.kubernetes.io/part-of: mnist-app
+        app.kubernetes.io/version: {{ .Values.configVersions.redis }}
 spec:
-    replicas: 1
+    replicas: {{ .Values.redis.replicas }}
     selector:
         matchLabels:
-            app: redis
+            app.kubernetes.io/name: redis
             role: master
     template:
         metadata:
             labels:
-                app: redis
+                app.kubernetes.io/name: redis
                 role: master
         spec:
             volumes:
                 - name: redis-storage
                   persistentVolumeClaim:
-                    claimName: redis-pvc
+                      claimName: redis-pvc
             containers:
-                - name: redis-master
-                  image: redis:7.4.1
+                - name: redis
+                  image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
                   resources:
                       limits:
-                          cpu: 200m
-                          memory: 200Mi
+                          memory: {{ .Values.redis.resources.memory }}
+                          cpu: {{ .Values.redis.resources.cpu }}
                   command:
                       - redis-server
                   args:
                       - --requirepass
                       - $(REDIS_PASSWORD)
                   ports:
-                      - containerPort: 6379
+                      - name: redis
+                        containerPort: 6379
                   volumeMounts:
                       - name: redis-storage
                         mountPath: /data
                   env:
-                    - name: REDIS_PASSWORD
-                      value: aiwilltakeovertheworld 
+                      - name: REDIS_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: redis-secret-{{ .Values.configVersions.redis }}
+                                key: db_password
