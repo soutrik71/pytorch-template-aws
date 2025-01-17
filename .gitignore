@@ -31,3 +31,4 @@ artifacts/*
 *jpeg
 artifacts/image_prediction.png
 cdk.out/
+ngrok.yml

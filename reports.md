@@ -103,7 +103,7 @@ Here I don't have any values specified in the values.yaml file, but we will add 
 helm install cat-dog-release cat-dog-model -f cat-dog-model/values.yaml
 helm upgrade cat-dog-release cat-dog-model -f cat-dog-model/values.yaml
 helm list -a
-kubectl get all -n demo
+kubectl get all -o wide -n demo
 minikube service web-server-service -n demo
 minikube tunnel
 kubectl port-forward service/web-server-service 9000:9000 -n demo
@@ -114,3 +114,48 @@ helm uninstall cat-dog-release
 
 ##### Tunnel deployment
 ![Deployment](./assets/catdog_deploy4.png)
+
+#### Bonus Assignment adding Ngrok:
+```bash
+# install ngrok on your local machine
+curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+	| sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+	&& echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+	| sudo tee /etc/apt/sources.list.d/ngrok.list \
+	&& sudo apt update \
+	&& sudo apt install ngrok
+
+# authenticate ngrok
+ngrok config add-authtoken <>
+# Forward port from pod to local
+kubectl port-forward service/ui-server-service  9000:9000 -n demo
+#Expose the port 9000 to internet
+ngrok http 9000
+# additional commands:
+kubectl get all -o wide -n demo
+kubectl get all -o wide -n demo
+kubectl describe deployment.apps/web-server -n demo
+kubectl describe pods pod/web-server-6598cc5dbb-mgd24  
+kubectl describe  pod/web-server-6598cc5dbb-mgd24 -n demo 
+kubectl get ingress -n demo
+kubectl describe ingress web-server-ingress -n demo
+kubectl top pod -n demo
+kubectl top node -n demo
+```
+##### Ngrok deployment
+![ngrok](image.png)
+
+##### kubectl get all -o wide -n demo
+![kubectl get all -o wide -n demo](image-1.png)
+
+##### kubectl describe <your_deployment> -n demo
+![deployment](image-2.png)
+
+##### kubectl describe <your_pod> -n demo
+![pods](image-3.png)
+
+##### kubectl describe <your_ingress> -n demo
+![ingress](image-4.png)
+
+##### kubectl top pod & kubectl top node -n demo
+![](image-5.png)
