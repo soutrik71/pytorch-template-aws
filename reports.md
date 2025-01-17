@@ -92,9 +92,9 @@ helm uninstall cat-dog-release -n cat-dog-nm
 ``` 
 Here I don't have any values specified in the values.yaml file, but we will add namespace specific values in the values.yaml file later.
 ##### Service deployment
-![Deployment](./assets/catdog_deploy1.png)
+![Deployment](./assets/ctdg_deploy1.png)
 ##### Tunnel deployment
-![Deployment](./assets/catdog_deploy2.png)
+![Deployment](./assets/ctdg_deploy2.png)
 
 ##### Helm based deployment(Name-space specific):
 ```bash
@@ -110,10 +110,10 @@ kubectl port-forward service/web-server-service 9000:9000 -n demo
 helm uninstall cat-dog-release
 ```
 ##### Service deployment
-![Deployment](./assets/catdog_deploy3.png)
+![Deployment](./assets/ctdg_deploy3.png)
 
 ##### Tunnel deployment
-![Deployment](./assets/catdog_deploy4.png)
+![Deployment](./assets/ctdg_deploy4.png)
 
 #### Bonus Assignment adding Ngrok:
 ```bash
