@@ -26,9 +26,6 @@ logs/
 /data
 artifacts/
 artifacts/*
-*png
-*jpg
-*jpeg
 artifacts/image_prediction.png
 cdk.out/
 ngrok.yml
